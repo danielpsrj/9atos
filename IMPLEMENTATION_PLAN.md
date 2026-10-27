@@ -63,6 +63,72 @@
 | `text-secondary` (Muted Slate) | `#8892B0` | Hints, dates, menu labels |
 | `error` (dark red) | `#F87171` | Mistake highlights (AA-compliant on `#112240`) |
 
+### 2.4 Platform & Code Requirements (binding)
+
+Pinned toolchain and code conventions. Every issue must comply; deviations require an owner decision.
+
+**Runtime & toolchain**
+
+| Item | Requirement |
+|------|-------------|
+| Node.js | **22 LTS** (Docker: `node:22-alpine`). Node 20 is EOL — do not use. |
+| Package manager | **npm**; `package-lock.json` committed. No pnpm/yarn. |
+| Framework | **Next.js 15** (App Router) + **React 19** (satisfies spec's "React 18+"). |
+| Language | **TypeScript 5.x**, `strict: true` **plus** `noUncheckedIndexedAccess`, `noImplicitOverride`, `noFallthroughCasesInSwitch`. Zero `any` (NFR-01). |
+| ORM | **Prisma 6** (PostgreSQL 16+). |
+| Styling | **Tailwind CSS 4** + Shadcn UI (latest) on Radix primitives. |
+| i18n | **next-intl 4**. |
+| Icons | **lucide-react** (flame, target, and all UI icons; `Disciplina.iconeUrl` maps to a lucide icon name). |
+| Unit tests | **Vitest 3** (+ `@vitest/coverage-v8`). |
+| E2E tests | **Playwright** (latest stable), Chromium only for V1. |
+| Lint | **ESLint flat config** + `typescript-eslint` in **strict-type-checked** mode. |
+| Format | **Prettier** (single quotes, semicolons, 100-col, trailing commas); `lint` script runs ESLint + Prettier check. |
+
+**Browser & device targets**
+
+- Last **2 major versions** of Chrome, Firefox, Safari, Edge (desktop + mobile). No Internet Explorer, no legacy Safari.
+- Minimum supported viewport: **768 px** (below that, the shell collapses per task 5.3).
+- No feature detection beyond what Next.js/React 19 baselines provide.
+
+**Dates, time, and timezones**
+
+- Date library: **date-fns**. All datetimes stored in **UTC** in the database.
+- All "calendar day" boundaries (streaks, daily goal, `ultimoAcesso` day checks) are evaluated in **America/Sao_Paulo** — the user's exam timezone. This is a V1 constant, not a user setting.
+- `proximaRevisao` comparisons use UTC instants; only day-bucketing uses the fixed timezone.
+
+**Typography**
+
+- **System font stack** (no webfonts in V1): `ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`.
+- Scale (Tailwind defaults, binding): body `text-base` (16 px), questions `text-lg`, card titles `text-xl`, dashboard headings `text-2xl`; line-height 1.5 for body, 1.25 for headings.
+
+**Animation**
+
+- Duration tokens: `fast` 150 ms, `base` 250 ms, `slow` 300 ms; easing `ease-out` for entrances, `ease-in` for exits.
+- Card flip: 300 ms rotateY; matching beam: 150 ms draw + 250 ms fade; mistake flash: 150 ms in, 250 ms out. Respect `prefers-reduced-motion` (disable non-essential animation).
+
+**API conventions**
+
+- **Error envelope** (all routes): `4xx/5xx` responses return `{ "error": { "code": string, "message": string, "details"?: object } }`. Codes are stable strings (e.g., `VALIDATION_ERROR`, `NOT_FOUND`, `INTERNAL_ERROR`).
+- **Health check**: `GET /api/health` → `200 { "status": "ok" }` (no DB dependency) — used by Docker orchestration.
+- Success responses are bare JSON payloads (no envelope).
+
+**Repository & delivery conventions**
+
+- **Conventional Commits** (`feat:`, `fix:`, `docs:`, `test:`, `chore:`, `refactor:`) — enforced by review; CI check optional in V1.
+- **Branching:** V1 works directly on `main` (single developer); no PR flow required, but every issue's work lands as one or more conventional commits referencing the issue number.
+- **Security headers** (Next.js `headers()`): `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, and a restrictive CSP (self only; no third-party origins in V1).
+- **Locale persistence:** next-intl locale cookie; default `pt-BR` when absent.
+
+**Data ingestion conventions**
+
+- **CSV header schema** (binding): `pergunta,resposta_certa,justificativa,dica,distratores,nivel_dificuldade,probabilidade` — `distratores` is semicolon-separated; `justificativa`, `dica`, `probabilidade` optional. JSON imports use the same field names as objects/arrays.
+- **Import limits:** max **5 MB** file size, max **10,000 rows**; larger files are rejected with a clear error.
+
+**Accepted behaviors (documented, not bugs)**
+
+- Closing the browser mid-session **loses unsynced grades** (sync fires only at session end). No mid-session persistence in V1.
+- Performance budget: Lighthouse **Performance ≥ 90** on the dashboard with seeded data (measured in task 9.2).
+
 ---
 
 ## 3. Architecture Decisions (resolved from spec)
@@ -96,7 +162,7 @@
 | 0.1 | `npx create-next-app` (App Router, TS strict, Tailwind, ESLint) | `npm run dev` serves; `tsc --noEmit` clean |
 | 0.2 | Add Prisma; `schema.prisma` with `generator` + `datasource` only | `prisma generate` succeeds |
 | 0.3 | `.env` / `.env.example` with `DATABASE_URL=postgresql://postgres:secret@db:5432/9atos` | `.env` git-ignored; example committed |
-| 0.4 | Multi-stage `Dockerfile` (deps → build → runner, `node:20-alpine`) | `docker build` produces < 400 MB image |
+| 0.4 | Multi-stage `Dockerfile` (deps → build → runner, `node:22-alpine` per §2.4) | `docker build` produces < 400 MB image |
 | 0.5 | `docker-compose.yml` per spec §8.2 (web + db, `db_data` volume, `restart: always`) | `docker compose up` → app on :3000, DB reachable |
 | 0.6 | `.gitignore`, `LICENSE` (MIT, per README), update `README.md` with real getting-started | README instructions work verbatim |
 
