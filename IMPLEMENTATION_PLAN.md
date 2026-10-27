@@ -34,6 +34,8 @@
 | FR-13 | Data ingestion: import knowledge base from CSV/JSON (parser service) | §2.2 |
 | FR-14 | i18n: UI fully locale-aware from day 1; `pt-BR` and `en-US` dictionaries via `next-intl`; DB content (`pergunta`, `resposta`) is NOT translated by the UI engine | §7 |
 | FR-15 | `ultimoAcesso` on `Usuario` updated on activity (feeds streak logic) | §3.1 |
+| FR-16 | User settings: configurable streak mode + threshold, daily goal, per-card timer seconds, Zen Mode default, session size limit; persisted per user, editable from a Settings screen | Owner decisions (Q1–Q3, Q6) |
+| FR-17 | Session sampling: due rules ranked by urgency, then selected with probability weighting by `Regra.probabilidade` | Owner decision (Q5) |
 
 ### 2.2 Non-Functional Requirements
 
@@ -59,7 +61,7 @@
 | `accent` (Gold/Amber) | `#FBBF24` | Timers, alerts, streaks, badges |
 | `text-primary` (Light Slate) | `#CCD6F6` | Body text, questions, justifications |
 | `text-secondary` (Muted Slate) | `#8892B0` | Hints, dates, menu labels |
-| `error` (dark red) | TBD (pick AA-compliant, e.g. `#F87171` on `#112240`) | Mistake highlights |
+| `error` (dark red) | `#F87171` | Mistake highlights (AA-compliant on `#112240`) |
 
 ---
 
@@ -71,11 +73,16 @@
 | AD-02 | **SRS runs server-side only.** Client sends grades; server computes intervals and returns the updated schedule. | §4 "adapted for server-side calculations"; keeps the algorithm in one testable place. |
 | AD-03 | **Games are pure functions of `Regra[]`.** A `GameEngine` module takes rules + game type and produces a session model (cards, pairs, cloze gaps, MC options). Distractors come from `Regra.distratores`; when fewer than needed, the engine borrows answers from sibling rules in the same topic (deterministic, seeded). | §1 decoupling principle; §2.2 "Game Logic Engine (Pair matching, distractors)". |
 | AD-04 | **Cloze generation is deterministic:** mask the longest contiguous word span of `respostaCerta` (or a marked span if provided later). No LLM in V1. | Keeps V1 dependency-free; AI pipeline is V2. |
-| AD-05 | **Streak logic:** a day counts if the user completed ≥1 study session that day (local time). `ofensivaAtual` increments on first session of a new day; resets to 0 if a calendar day is skipped. `maiorOfensiva` = historical max. | Spec defines the fields but not the rule; this is the standard interpretation. |
-| AD-06 | **Daily goal** defaults to 30 rules/day (matches the "20/30 Rules" mockup); stored as a constant in V1, user-configurable later. | §5.2 mockup. |
+| AD-05 | **Streak logic (configurable):** a day counts when the user's activity that day meets a configurable threshold — either ≥N study sessions or ≥N rules reviewed (user picks the mode and the N). `ofensivaAtual` increments on the first qualifying day; resets to 0 if a calendar day is skipped. `maiorOfensiva` = historical max. Defaults: mode = rules, threshold = 1. | Owner decision (Q1): make it configurable. |
+| AD-06 | **Daily goal (configurable):** default 30 rules/day (matches the "20/30 Rules" mockup), user-adjustable in settings. | §5.2 mockup + owner decision (Q2). |
 | AD-07 | **i18n via `next-intl`** with `[locale]` route segment; default locale `pt-BR` (spec is written for Brazilian exam prep), fallback `en-US`. | §7. |
-| AD-08 | **API surface:** `POST /api/study/session/start`, `POST /api/study/session/sync` (per spec) + CRUD routes for the knowledge hierarchy and notebooks (spec implies them via the dashboard). | §6 + §5.2. |
+| AD-08 | **API surface:** `POST /api/study/session/start`, `POST /api/study/session/sync` (per spec) + CRUD routes for the knowledge hierarchy and notebooks (spec implies them via the dashboard) + settings read/update. | §6 + §5.2. |
 | AD-09 | **Seed data:** a sample `Area → Disciplina → Topico → Regra` dataset (e.g., Brazilian Constitution, Fundamental Rights) committed to the repo for dev/demo. | Needed to make the dashboard and games demonstrable. |
+| AD-10 | **User settings model:** new `ConfiguracaoUsuario` model (1:1 with `Usuario`, created at bootstrap) holding: `modoOfensiva` (`sessoes` \| `regras`), `limiarOfensiva` (Int), `metaDiaria` (Int, default 30), `segundosPorCartao` (Int, default 30), `zenModePadrao` (Boolean, default true), `limiteSessao` (Int, default 20). Keeps the spec's `Usuario` model intact and groups all tunables in one place. | Owner decisions (Q1, Q2, Q3, Q6). |
+| AD-11 | **Session sampling weighted by `probabilidade`:** the scheduler ranks due rules by urgency (`proximaRevisao`), then breaks ties and applies stochastic selection weighted by `Regra.probabilidade` (rules with `null` get weight 1.0). Higher-probability rules appear more often across sessions. | Owner decision (Q5): weight sampling, not metadata-only. |
+| AD-12 | **Timer & Zen Mode:** timed mode uses a configurable per-card countdown (default 30 s); expiry auto-grades the card as Missed (q=1). **Zen Mode is the default** — sessions start untimed unless the user switches to timed mode. | Owner decision (Q3). |
+| AD-13 | **Session size:** default `limit` = 20 rules per session (matches the spec's example payload and the "20/30" mockup); overridable per request and via `ConfiguracaoUsuario.limiteSessao`. | Owner decision (Q6): proposed 20, adopted. |
+| AD-14 | **Matching minimum:** a matching session requires ≥4 pairs; if a notebook yields fewer due rules, the engine tops up with the next-most-urgent rules from the same notebook (or the whole knowledge base if the notebook is exhausted) to reach 4. | Owner decision (Q7): proposed 4, adopted. |
 
 ---
 
@@ -98,9 +105,9 @@
 
 | Task | Details | Acceptance criteria |
 |------|---------|---------------------|
-| 1.1 | Write complete Prisma schema (all 8 models, relations, `@@unique([usuarioId, regraId])`, cascade deletes) | `prisma migrate dev` applies cleanly |
+| 1.1 | Write complete Prisma schema (all 8 spec models + `ConfiguracaoUsuario` per AD-10, relations, `@@unique([usuarioId, regraId])`, cascade deletes) | `prisma migrate dev` applies cleanly |
 | 1.2 | Prisma client singleton (`lib/prisma.ts`) | No connection leaks in dev |
-| 1.3 | Seed script: bootstrap `Usuario` + sample hierarchy (≥1 Area, ≥2 Disciplinas, ≥3 Topicos, ≥15 Regras with distractors) | `prisma db seed` populates DB; idempotent |
+| 1.3 | Seed script: bootstrap `Usuario` + default `ConfiguracaoUsuario` + sample hierarchy (≥1 Area, ≥2 Disciplinas, ≥3 Topicos, ≥15 Regras with distractors and varied `probabilidade`) | `prisma db seed` populates DB; idempotent |
 | 1.4 | Repository layer (`lib/repositories/`): typed CRUD for Area, Disciplina, Topico, Regra, Caderno | Unit-tested with a test DB or mocked client |
 
 ### Phase 2 — SRS Engine
@@ -110,7 +117,7 @@
 |------|---------|---------------------|
 | 2.1 | `lib/srs/engine.ts`: pure function `applyReview(state, q, now) → newState` implementing §4.1 exactly (error reset; 1 → 6 → ×EF progression; EF formula; floor 1.3; `proximaRevisao = now + interval`) | — |
 | 2.2 | Unit tests: every grade (1, 3, 4, 5) × every rep stage (0, 1, 2+); EF floor clamp; interval reset after lapse; history append | All pass; table-driven test cases from the spec's formulas |
-| 2.3 | `lib/srs/scheduler.ts`: `dueRules(usuarioId, cadernoId?, limit)` — orders by `proximaRevisao <= now` first, then earliest future; excludes none (overdue always included) | Tested: overdue rules always returned first |
+| 2.3 | `lib/srs/scheduler.ts`: `dueRules(usuarioId, cadernoId?, limit)` — orders by `proximaRevisao <= now` first, then earliest future; overdue always included; ties and over-limit selection use probability-weighted sampling by `Regra.probabilidade` (null → weight 1.0) per AD-11 | Tested: overdue rules always returned first; weighted sampling respects `probabilidade` distribution over many draws (statistical test) |
 | 2.4 | Session sync service: applies a batch of `{regraId, qualidade}` atomically (Prisma transaction), appends to `historico`, updates streak fields | Tested: batch of N updates in one transaction |
 
 ### Phase 3 — Game Engine
@@ -135,6 +142,7 @@
 | 4.3 | Knowledge CRUD: `GET/POST/PATCH/DELETE` for areas, disciplinas, topicos, regras (nested under parent routes) | OpenAPI-ish doc comment per route |
 | 4.4 | Notebook CRUD: create/rename/delete caderno; add/remove rules | Cascade delete verified |
 | 4.5 | Dashboard data route: streak, goal progress, per-notebook ring percentages (interval > 21 days) | Single round-trip payload |
+| 4.6 | Settings: `GET /api/settings`, `PATCH /api/settings` (validates ranges: threshold ≥1, goal ≥1, timer 5–120 s, session limit 5–50) | Invalid values rejected with 400 |
 
 ### Phase 5 — Design System & Shell
 **Goal:** the "Sapphire & Gold Abyss" identity, applied before feature screens.
@@ -156,19 +164,20 @@
 | 6.2 | Notebook card grid (`#112240` cards): area tag, title, SVG progress ring (sapphire, % = rules with interval > 21), "Study" button | Ring animates on load; empty state when no notebooks |
 | 6.3 | "New Notebook" flow (dialog: name, description) | Creates caderno, appears in grid |
 | 6.4 | Empty/onboarding state: first-run screen prompting to import data or use the seed | Shown when 0 notebooks |
+| 6.5 | Settings screen (side-nav entry): streak mode + threshold, daily goal, timer seconds, Zen Mode default, session size — all persisted via 4.6 | Changes take effect on next session; values round-trip |
 
 ### Phase 7 — Game Screens
 **Goal:** Screen 2 chrome + all four games playable end-to-end.
 
 | Task | Details | Acceptance criteria |
 |------|---------|---------------------|
-| 7.1 | Session chrome: top linear progress bar; Exit (left, confirm dialog); Zen Mode toggle / descending gold timer (right) | Timer pauses in Zen Mode; exit mid-session discards unsynced grades with confirmation |
+| 7.1 | Session chrome: top linear progress bar; Exit (left, confirm dialog); Zen Mode toggle / descending gold timer (right). **Zen Mode is the default** (AD-12); timed mode uses the user-configurable per-card countdown | Timer pauses in Zen Mode; exit mid-session discards unsynced grades with confirmation |
 | 7.2 | Flashcards: flip animation, grade buttons (Missed/Hard/Good/Easy) after reveal, justification + hint display | Grade → next card; session ends → sync |
-| 7.3 | Matching: two columns; click-to-select; correct pair → sapphire beam animation → fade out; wrong pair → dark red flash + error counter | Beam is a CSS/SVG line between the two cards; session ends when all pairs matched |
+| 7.3 | Matching: two columns; click-to-select; correct pair → sapphire beam animation → fade out; wrong pair → dark red (`#F87171`) flash + error counter. Enforces the ≥4-pair minimum (AD-14) with top-up from next-most-urgent rules | Beam is a CSS/SVG line between the two cards; session ends when all pairs matched; top-up verified when notebook has <4 due rules |
 | 7.4 | Multiple choice: question + options; instant feedback (correct = sapphire, wrong = red + show justification) | — |
 | 7.5 | Cloze: sentence with blank; type-to-fill or pick-from-options; per-blank feedback | — |
 | 7.6 | Session end: results summary (correct %, per-rule grades), then `POST /sync` | Sync fires exactly once; UI shows updated "next review" info |
-| 7.7 | Timer mode: countdown per card (gold); expiry auto-grades as Missed (q=1) | Configurable seconds; Zen Mode disables it |
+| 7.7 | Timer mode: countdown per card (gold, default 30 s, user-configurable 5–120 s); expiry auto-grades as Missed (q=1) | Configurable seconds honored; Zen Mode (default) disables it |
 
 ### Phase 8 — Ingestion & Knowledge Base UI
 **Goal:** get real content in without hand-editing the DB.
@@ -233,15 +242,19 @@ Phase 0 ──► Phase 1 ──► Phase 2 ──► Phase 3 ──► Phase 4 
 
 ---
 
-## 8. Open Questions (need owner decision before Phase 2)
+## 8. Resolved Decisions (owner sign-off)
 
-1. **Streak definition (AD-05):** "≥1 session per day" or "≥N rules per day"? The spec only defines the fields.
-2. **Daily goal (AD-06):** 30 rules/day as a hardcoded default, or a user setting in V1?
-3. **Timer defaults:** seconds per card in timed mode, and whether Zen Mode is the default.
-4. **Error color:** spec says "slight dark red highlight" without a hex — pick from the palette (proposal: `#F87171`).
-5. **`probabilidade` field:** spec defines it ("chance of appearing in an exam") but no V1 feature consumes it. Keep as metadata only, or weight session sampling with it?
-6. **Session size:** default `limit` for `session/start` (mockup implies ~20).
-7. **Matching minimum:** spec doesn't state a minimum pair count; proposal is 4.
+All previously open questions are resolved. These are binding for V1:
+
+| # | Question | Decision |
+|---|----------|----------|
+| Q1 | Streak definition | **Configurable** — user chooses mode (sessions/day or rules/day) and threshold (AD-05, AD-10) |
+| Q2 | Daily goal | **Configurable** — default 30 rules/day, user-adjustable (AD-06, AD-10) |
+| Q3 | Timer defaults | Per-card seconds **configurable** (default 30 s); **Zen Mode is the default** (AD-12) |
+| Q4 | Error color | `#F87171` (proposal adopted) |
+| Q5 | `probabilidade` field | **Weights session sampling** — not metadata-only (AD-11) |
+| Q6 | Session size | **Default 20** (proposed, adopted); overridable per request and in settings (AD-13) |
+| Q7 | Matching minimum | **4 pairs** (proposal adopted), with top-up logic (AD-14) |
 
 ---
 
