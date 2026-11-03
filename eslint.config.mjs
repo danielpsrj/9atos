@@ -30,6 +30,30 @@ const eslintConfig = [
     rules: {
       // Plan §2.4: zero `any` leakage (NFR-01)
       '@typescript-eslint/no-explicit-any': 'error',
+      // #10: only src/lib/prisma.ts may import the PrismaClient class. Every
+      // other file (API routes, services, repositories) must use the prisma
+      // singleton. Type-only imports from @prisma/client remain allowed.
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@prisma/client',
+              importNames: ['PrismaClient'],
+              message:
+                'Import the `prisma` singleton from @/lib/prisma instead of instantiating PrismaClient directly.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // The singleton and the standalone seed script are the only files allowed
+    // to instantiate PrismaClient directly.
+    files: ['src/lib/prisma.ts', 'prisma/seed.ts'],
+    rules: {
+      'no-restricted-imports': 'off',
     },
   },
   {

@@ -6,6 +6,9 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
     passWithNoTests: true,
+    // Repository/API tests share a single ephemeral Postgres and each wipes it
+    // in beforeEach, so test files must run serially to avoid cross-file races.
+    fileParallelism: false,
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],

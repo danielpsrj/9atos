@@ -28,5 +28,22 @@ services:
       - db_data:/var/lib/postgresql/data
     restart: always
 
+  # Ephemeral test database for repository/API unit tests (plan §6). Started
+  # only with `--profile test`; no volume, so it is wiped on `down`.
+  db-test:
+    image: postgres:16-alpine
+    profiles: ['test']
+    ports:
+      - '5433:5432'
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=9atos_test
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d 9atos_test']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
 volumes:
   db_data:
