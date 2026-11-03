@@ -42,19 +42,19 @@ npm run dev              # → http://localhost:3000
 
 ## Scripts
 
-| Script | Purpose |
-| ------ | ------- |
-| `npm run dev` | Start the dev server (Turbopack) on port 3000 |
-| `npm run build` | Production build |
-| `npm start` | Serve the production build |
-| `npm run lint` | ESLint (strict-type-checked) + Prettier check |
-| `npm run format` | Prettier write |
-| `npm test` | Run unit tests (Vitest) |
-| `npm run test:coverage` | Unit tests with V8 coverage |
-| `npm run prisma:generate` | Regenerate the Prisma client |
-| `npm run prisma:migrate` | Create/apply a dev migration |
-| `npm run prisma:studio` | Open Prisma Studio |
-| `npm run db:seed` | Seed the database |
+| Script                    | Purpose                                       |
+| ------------------------- | --------------------------------------------- |
+| `npm run dev`             | Start the dev server (Turbopack) on port 3000 |
+| `npm run build`           | Production build                              |
+| `npm start`               | Serve the production build                    |
+| `npm run lint`            | ESLint (strict-type-checked) + Prettier check |
+| `npm run format`          | Prettier write                                |
+| `npm test`                | Run unit tests (Vitest)                       |
+| `npm run test:coverage`   | Unit tests with V8 coverage                   |
+| `npm run prisma:generate` | Regenerate the Prisma client                  |
+| `npm run prisma:migrate`  | Create/apply a dev migration                  |
+| `npm run prisma:studio`   | Open Prisma Studio                            |
+| `npm run db:seed`         | Seed the database                             |
 
 ## Project Structure
 
@@ -75,8 +75,8 @@ npm run dev              # → http://localhost:3000
 
 ## Environment
 
-| Variable | Description | Default (`.env.example`) |
-| -------- | ----------- | ------------------------ |
+| Variable       | Description                  | Default (`.env.example`)                     |
+| -------------- | ---------------------------- | -------------------------------------------- |
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://postgres:secret@db:5432/9atos` |
 
 ## License

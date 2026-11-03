@@ -5,14 +5,14 @@ services:
   web:
     build: .
     ports:
-      - "3005:3000"
+      - '3005:3000'
     environment:
       - DATABASE_URL=postgresql://postgres:secret@db:5432/9atos
     depends_on:
       - db
     restart: always
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3000/api/health']
       interval: 30s
       timeout: 5s
       retries: 3
