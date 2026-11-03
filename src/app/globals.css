@@ -1,26 +1,105 @@
 @import 'tailwindcss';
 
+/* ── Sapphire & Gold Abyss design tokens (spec §5.1, plan §2.3) ─────────────
+   The seven binding tokens as CSS variables. Hex values are binding (NFR-05).
+   Each is also exposed as a Tailwind color token so utilities like
+   `bg-bg-primary`, `text-primary`, `bg-accent`, `text-error` are generated. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg-primary: #0a192f; /* Midnight Ocean — app background */
+  --bg-secondary: #112240; /* Submarine Waters — cards, side panels, modals */
+  --primary: #64ffda; /* Sapphire — buttons, links, highlights, rings, beams */
+  --accent: #fbbf24; /* Gold/Amber — timers, alerts, streaks, badges */
+  --text-primary: #ccd6f6; /* Light Slate — body text, questions, justifications */
+  --text-secondary: #8892b0; /* Muted Slate — hints, dates, menu labels */
+  --error: #f87171; /* dark red — mistake highlights */
+
+  /* Animation tokens (plan §2.4): durations + entrance/exit easing. */
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 300ms;
+  --ease-entrance: ease-out;
+  --ease-exit: ease-in;
 }
 
+/* Map the CSS variables onto Tailwind's theme so color utilities are generated.
+   `@theme inline` keeps the utilities referencing the :root variables directly,
+   so a single source of truth drives both raw CSS and Tailwind classes. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-error: var(--error);
+
+  /* System font stack (plan §2.4): no webfonts in V1. */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  /* Animation duration + easing tokens (plan §2.4). */
+  --animate-flip: flip var(--duration-slow) var(--ease-entrance);
+  --animate-beam: beam var(--duration-fast) var(--ease-entrance);
+  --animate-flash: flash var(--duration-fast) var(--ease-entrance);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Keyframes for the game animations (plan §2.4). */
+@keyframes flip {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(180deg);
   }
 }
 
+@keyframes beam {
+  from {
+    stroke-dashoffset: 100;
+    opacity: 0;
+  }
+  to {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+@keyframes flash {
+  from {
+    background-color: var(--error);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+/* Global base: the app background, main text color, and the system font stack.
+   Type scale (plan §2.4): body text-base/1.5; headings use a tighter 1.25. */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 1rem; /* text-base, 16px */
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  line-height: 1.25;
+}
+
+/* Honor prefers-reduced-motion: disable non-essential animation (plan §2.4). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
