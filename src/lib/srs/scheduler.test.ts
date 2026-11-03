@@ -118,6 +118,38 @@ describe('dueRules', () => {
     expect(perguntas).toContain('due-at-now');
     expect(perguntas[0]).toBe('due-at-now'); // overdue first
   });
+
+  it('includes never-studied rules (no progress row) as due-now', async () => {
+    // A regra with no ProgressoUsuario row must be returned (due immediately),
+    // so a brand-new user gets a playable session from seeded data.
+    await makeRegra(0.5, 'never-studied');
+    const overdue = await makeRegra(0.5, 'overdue');
+    await makeProgress(overdue.id, new Date(NOW.getTime() - 1000));
+
+    const due = await dueRules(usuarioId, { now: NOW, limit: 10 });
+    const perguntas = due.map((d) => d.regra.pergunta);
+    expect(perguntas).toContain('never-studied');
+    expect(perguntas).toContain('overdue');
+    // The never-studied rule carries a null progresso.
+    const never = due.find((d) => d.regra.pergunta === 'never-studied');
+    expect(never?.progresso).toBeNull();
+    // The overdue rule carries its progress.
+    const over = due.find((d) => d.regra.pergunta === 'overdue');
+    expect(over?.progresso).not.toBeNull();
+  });
+
+  it('returns every seeded regra for a user with no progress (playable from empty)', async () => {
+    // No progress rows at all — every regra is due-now.
+    await makeRegra(0.5, 'a');
+    await makeRegra(0.6, 'b');
+    await makeRegra(0.7, 'c');
+
+    const due = await dueRules(usuarioId, { now: NOW, limit: 20 });
+    expect(due).toHaveLength(3);
+    for (const d of due) {
+      expect(d.progresso).toBeNull();
+    }
+  });
 });
 
 describe('weightedSample (statistical, AD-11)', () => {

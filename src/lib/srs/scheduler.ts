@@ -2,11 +2,20 @@ import { prisma } from '@/lib/prisma';
 import type { ProgressoUsuario, Regra } from '@prisma/client';
 
 // Plan §2.4 / spec §4, §6: decides which rules a study session contains.
-// Overdue rules (proximaRevisao <= now) are prioritized; ties and over-limit
-// selection use stochastic sampling weighted by Regra.probabilidade (AD-11),
-// with null probabilidade treated as weight 1.0. All comparisons are UTC.
+// Urgency, most to least:
+//   1. Never studied (no ProgressoUsuario row) — due immediately.
+//   2. Overdue (proximaRevisao <= now).
+//   3. Future (proximaRevisao > now), earliest first.
+// Ties and over-limit selection use stochastic sampling weighted by
+// Regra.probabilidade (AD-11), with null probabilidade treated as weight 1.0.
+// All comparisons are UTC.
 
-export type DueRule = ProgressoUsuario & { regra: Regra };
+/** A rule selected for a session, with its existing SRS progress (or null). */
+export interface DueRule {
+  regra: Regra;
+  /** The existing SRS progress, or null if the rule has never been studied. */
+  progresso: ProgressoUsuario | null;
+}
 
 export interface DueRulesOptions {
   /** Scope to a single notebook (only rules in that caderno). */
@@ -57,8 +66,8 @@ export function weightedSample<T>(items: T[], weight: (item: T) => number, count
 /**
  * Return the rules due for a study session, at most `limit`.
  *
- * Ordering: overdue (proximaRevisao <= now) first — always prioritized — then
- * earliest future proximaRevisao. When overdue rules exceed `limit`, or when
+ * Ordering: never-studied and overdue rules first (both are "due now"), then
+ * earliest future proximaRevisao. When the due-now pool exceeds `limit`, or when
  * future rules tie at the selection boundary, the choice is made by
  * probabilidade-weighted sampling (AD-11).
  */
@@ -68,27 +77,45 @@ export async function dueRules(
 ): Promise<DueRule[]> {
   const { cadernoId, limit = DEFAULT_LIMIT, now = new Date() } = options;
 
+  // All rules in scope (caderno, or the whole knowledge base).
+  const regras = await prisma.regra.findMany({
+    where: cadernoId ? { cadernos: { some: { cadernoId } } } : undefined,
+  });
+
+  // The user's existing progress for those rules.
   const progressos = await prisma.progressoUsuario.findMany({
     where: {
       usuarioId,
       ...(cadernoId ? { regra: { cadernos: { some: { cadernoId } } } } : {}),
     },
-    include: { regra: true },
   });
+  const progressByRegra = new Map(progressos.map((p) => [p.regraId, p]));
 
-  const overdue = progressos.filter((p) => p.proximaRevisao.getTime() <= now.getTime());
-  const future = progressos
-    .filter((p) => p.proximaRevisao.getTime() > now.getTime())
-    .sort((a, b) => a.proximaRevisao.getTime() - b.proximaRevisao.getTime());
+  const dueNow: DueRule[] = [];
+  const future: DueRule[] = [];
+  for (const regra of regras) {
+    const progresso = progressByRegra.get(regra.id) ?? null;
+    const due: DueRule = { regra, progresso };
+    if (progresso === null || progresso.proximaRevisao.getTime() <= now.getTime()) {
+      dueNow.push(due);
+    } else {
+      future.push(due);
+    }
+  }
+  future.sort((a, b) => {
+    const aTime = a.progresso?.proximaRevisao.getTime() ?? 0;
+    const bTime = b.progresso?.proximaRevisao.getTime() ?? 0;
+    return aTime - bTime;
+  });
 
   const selected: DueRule[] = [];
 
-  // Overdue rules are always prioritized. If they fit, take all; otherwise
-  // sample `limit` of them by weight.
-  if (overdue.length <= limit) {
-    selected.push(...overdue);
+  // Due-now rules (never studied + overdue) are always prioritized. If they fit,
+  // take all; otherwise sample `limit` of them by weight.
+  if (dueNow.length <= limit) {
+    selected.push(...dueNow);
   } else {
-    selected.push(...weightedSample(overdue, dueRuleWeight, limit));
+    selected.push(...weightedSample(dueNow, dueRuleWeight, limit));
     return selected; // no slots left for future rules
   }
 
@@ -99,11 +126,14 @@ export async function dueRules(
     if (future.length <= remaining) {
       selected.push(...future);
     } else {
-      const cutoff = future[remaining - 1] as DueRule;
+      // future.length > remaining here, so index (remaining - 1) is in bounds.
+      const cutoff = future[remaining - 1];
+      if (cutoff === undefined) return selected; // unreachable; satisfies TS
+      const cutoffTime = cutoff.progresso?.proximaRevisao.getTime() ?? 0;
       const beforeCutoff = future.slice(0, remaining - 1);
       const atCutoff = future
         .slice(remaining - 1)
-        .filter((p) => p.proximaRevisao.getTime() === cutoff.proximaRevisao.getTime());
+        .filter((d) => d.progresso?.proximaRevisao.getTime() === cutoffTime);
       const slotsAtCutoff = remaining - beforeCutoff.length;
       selected.push(...beforeCutoff, ...weightedSample(atCutoff, dueRuleWeight, slotsAtCutoff));
     }

@@ -22,3 +22,4 @@ export { buildMatchSession, MIN_MATCH_PAIRS } from './matching';
 export { buildClozeSession, longestWordSpan, validateClozeAnswer } from './cloze';
 export { Grade, mapDirectGrades, mapMatchingGrades, mapClozeGrades } from './grade-mapping';
 export type { ButtonGrade } from './grade-mapping';
+export { toGameRule } from './from-regra';
