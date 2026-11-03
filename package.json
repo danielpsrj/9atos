@@ -19,6 +19,7 @@
     "db:seed": "prisma db seed"
   },
   "dependencies": {
+    "@date-fns/tz": "^1.5.0",
     "@prisma/client": "^6.19.3",
     "date-fns": "^4.4.0",
     "next": "15.5.28",
