@@ -93,7 +93,9 @@ describe('dueRules', () => {
 
     let weightedCount = 0;
     let nullCount = 0;
-    const draws = 4000;
+    // 1000 draws × 2 queries each stays well under the 5s timeout; the ±0.08
+    // tolerance is still ~5 standard errors at p=0.5, so the assertion is safe.
+    const draws = 1000;
     for (let i = 0; i < draws; i++) {
       const due = await dueRules(usuarioId, { now: NOW, limit: 1 });
       if (due[0]?.regra.pergunta === 'weighted') weightedCount++;
