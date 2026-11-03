@@ -1,5 +1,6 @@
-// 9Atos — Prisma schema (stub)
-// Full schema lands in task 1.1 (#7). Per #2, only generator + datasource for now.
+// 9Atos — Prisma schema
+// Full relational schema per spec §3.1, plus ConfiguracaoUsuario (AD-10).
+// All datetimes are stored in UTC (plan §2.4); day-boundary logic lives in the app.
 
 generator client {
   provider = "prisma-client-js"
@@ -8,4 +9,123 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// Streak counting mode (AD-05, AD-10): count qualifying days by sessions or by rules reviewed.
+enum ModoOfensiva {
+  sessoes
+  regras
+}
+
+model Usuario {
+  id             String    @id @default(uuid())
+  nome           String
+  email          String?   @unique
+  ofensivaAtual  Int       @default(0)
+  maiorOfensiva  Int       @default(0)
+  ultimoAcesso   DateTime  @default(now())
+  cadernos       Caderno[]
+  progressos     ProgressoUsuario[]
+  configuracao   ConfiguracaoUsuario?
+}
+
+// --- KNOWLEDGE HIERARCHY ---
+
+model Area {
+  id          String       @id @default(uuid())
+  nome        String
+  disciplinas Disciplina[]
+}
+
+model Disciplina {
+  id         String    @id @default(uuid())
+  nome       String
+  iconeUrl   String? // Mapping for icon library (lucide icon name, plan §2.4)
+  corHex     String? // Discipline's theme color
+  areaId     String
+  area       Area      @relation(fields: [areaId], references: [id])
+  topicos    Topico[]
+}
+
+model Topico {
+  id           String   @id @default(uuid())
+  nome         String
+  disciplinaId String
+  disciplina   Disciplina @relation(fields: [disciplinaId], references: [id])
+  regras       Regra[]
+}
+
+model Regra {
+  id           String   @id @default(uuid())
+  topicoId     String
+  topico       Topico   @relation(fields: [topicoId], references: [id])
+
+  // Base Content
+  pergunta        String
+  respostaCerta   String
+  justificativa   String?
+  dica            String?
+
+  // Distractors (stored as JSON array for flexibility)
+  distratores     Json     @default("[]")
+
+  // Metadata
+  nivelDificuldade Int     @default(1) // 1 to 5
+  probabilidade    Float? // Chance of appearing in an exam (0.0 to 1.0)
+
+  progressos      ProgressoUsuario[]
+  cadernos        RegraNoCaderno[]
+}
+
+// --- STUDY STRUCTURE ---
+
+model Caderno {
+  id        String           @id @default(uuid())
+  usuarioId String
+  usuario   Usuario          @relation(fields: [usuarioId], references: [id])
+  nome      String
+  descricao String?
+  regras    RegraNoCaderno[]
+}
+
+model RegraNoCaderno {
+  cadernoId String
+  regraId   String
+  caderno   Caderno @relation(fields: [cadernoId], references: [id], onDelete: Cascade)
+  regra     Regra   @relation(fields: [regraId], references: [id], onDelete: Cascade)
+
+  @@id([cadernoId, regraId])
+}
+
+// --- PROGRESS ENGINE (SRS) ---
+
+model ProgressoUsuario {
+  id         String   @id @default(uuid())
+  usuarioId  String
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id])
+  regraId    String
+  regra      Regra    @relation(fields: [regraId], references: [id])
+
+  // Modified SM-2 Algorithm
+  reps            Int      @default(0) // Number of consecutive correct repetitions
+  easeFactor      Float    @default(2.5) // Initial ease factor
+  intervaloDias   Float    @default(0) // Interval until next review
+  proximaRevisao  DateTime @default(now()) // Calculated date for next review
+  historico       Json     @default("[]") // Log of dates and grades (1 to 4)
+
+  @@unique([usuarioId, regraId])
+}
+
+// --- USER SETTINGS (AD-10) ---
+
+model ConfiguracaoUsuario {
+  id               String       @id @default(uuid())
+  usuarioId        String       @unique
+  usuario          Usuario      @relation(fields: [usuarioId], references: [id])
+  modoOfensiva     ModoOfensiva @default(regras)
+  limiarOfensiva   Int          @default(1)
+  metaDiaria       Int          @default(30)
+  segundosPorCartao Int         @default(30)
+  zenModePadrao    Boolean      @default(true)
+  limiteSessao     Int          @default(20)
 }
