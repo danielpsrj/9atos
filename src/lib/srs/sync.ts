@@ -14,6 +14,18 @@ export interface GradeEntry {
   qualidade: number;
 }
 
+/** The updated schedule for one rule after a session is applied. */
+export interface SyncResult {
+  regraId: string;
+  proximaRevisao: Date;
+}
+
+/** The shape persisted in SessaoEstudo.resultados (ISO strings, JSON-safe). */
+interface StoredResult {
+  regraId: string;
+  proximaRevisao: string;
+}
+
 export interface SyncSessionOptions {
   /** The "now" instant (UTC). Injected for testability. */
   now?: Date;
@@ -36,7 +48,8 @@ function dayKeyToDate(key: string): Date {
 
 /**
  * Apply a batch of grades for a user in a single transaction and update the
- * streak fields per AD-05.
+ * streak fields per AD-05. Idempotent per sessionId (issue #22): a replay of an
+ * already-applied sessionId returns the stored result without re-applying SRS.
  *
  * - Each grade runs applyReview and persists the new SRS state + historico.
  * - The streak (ofensivaAtual) counts consecutive qualifying days in
@@ -44,21 +57,37 @@ function dayKeyToDate(key: string): Date {
  *   configurable mode/threshold (ConfiguracaoUsuario). A skipped day resets the
  *   streak to 0; maiorOfensiva is the historical max.
  * - Usuario.ultimoAcesso is set to `now` (FR-15).
+ * - Returns the updated proximaRevisao for every submitted rule.
  */
 export async function syncSession(
   usuarioId: string,
+  sessionId: string,
   batch: GradeEntry[],
   options: SyncSessionOptions = {},
-): Promise<void> {
+): Promise<SyncResult[]> {
   const now = options.now ?? new Date();
 
-  await prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx) => {
+    // Idempotency: if this session was already applied, return the stored
+    // result and skip all SRS/streak work (prevents double-apply on retry).
+    const existing = await tx.sessaoEstudo.findUnique({
+      where: { usuarioId_id: { usuarioId, id: sessionId } },
+    });
+    if (existing !== null) {
+      const stored = existing.resultados as unknown as StoredResult[];
+      return stored.map((r) => ({
+        regraId: r.regraId,
+        proximaRevisao: new Date(r.proximaRevisao),
+      }));
+    }
+
     // Load the user's config (AD-10 defaults if missing).
     const config = await tx.configuracaoUsuario.findUnique({ where: { usuarioId } });
     const modoOfensiva = config?.modoOfensiva ?? 'regras';
     const limiarOfensiva = config?.limiarOfensiva ?? 1;
 
-    // Apply each grade.
+    // Apply each grade, collecting the new proximaRevisao per rule.
+    const results: SyncResult[] = [];
     for (const { regraId, qualidade } of batch) {
       const progress = await tx.progressoUsuario.upsert({
         where: { usuarioId_regraId: { usuarioId, regraId } },
@@ -85,6 +114,7 @@ export async function syncSession(
           historico: next.historico as unknown as Prisma.InputJsonValue,
         },
       });
+      results.push({ regraId, proximaRevisao: next.proximaRevisao });
     }
 
     // Streak update (AD-05).
@@ -123,5 +153,16 @@ export async function syncSession(
       where: { id: usuarioId },
       data: { ofensivaAtual, maiorOfensiva, ultimoAcesso: now },
     });
+
+    // Persist the session outcome for idempotent replay.
+    const stored: StoredResult[] = results.map((r) => ({
+      regraId: r.regraId,
+      proximaRevisao: r.proximaRevisao.toISOString(),
+    }));
+    await tx.sessaoEstudo.create({
+      data: { id: sessionId, usuarioId, resultados: stored as unknown as Prisma.InputJsonValue },
+    });
+
+    return results;
   });
 }

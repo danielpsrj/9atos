@@ -26,6 +26,7 @@ describe('syncSession', () => {
   }
 
   beforeEach(async () => {
+    await prisma.sessaoEstudo.deleteMany();
     await prisma.progressoUsuario.deleteMany();
     await prisma.regraNoCaderno.deleteMany();
     await prisma.caderno.deleteMany();
@@ -48,6 +49,7 @@ describe('syncSession', () => {
     const now = new Date('2026-06-01T12:00:00.000Z');
     await syncSession(
       usuarioId,
+      'sess-batch',
       [
         { regraId: regra1, qualidade: 4 },
         { regraId: regra2, qualidade: 5 },
@@ -64,9 +66,46 @@ describe('syncSession', () => {
     }
   });
 
+  it('is idempotent per sessionId: a replay returns the original result without re-applying', async () => {
+    const now = new Date('2026-06-01T12:00:00.000Z');
+    const first = await syncSession(usuarioId, 'sess-idem', [{ regraId: regra1, qualidade: 4 }], {
+      now,
+    });
+    expect(first).toHaveLength(1);
+    const originalProxima = first[0]?.proximaRevisao;
+    expect(originalProxima).toBeDefined();
+
+    // Replay the same sessionId.
+    const replay = await syncSession(usuarioId, 'sess-idem', [{ regraId: regra1, qualidade: 4 }], {
+      now,
+    });
+    expect(replay).toHaveLength(1);
+    // The replay returns the ORIGINAL proximaRevisao (not a re-computed one).
+    expect(replay[0]?.proximaRevisao).toEqual(originalProxima);
+
+    // The SRS state was NOT re-applied: reps is still 1, historico still length 1.
+    const progress = await prisma.progressoUsuario.findUniqueOrThrow({
+      where: { usuarioId_regraId: { usuarioId, regraId: regra1 } },
+    });
+    expect(progress.reps).toBe(1);
+    expect(progress.historico).toHaveLength(1);
+  });
+
+  it('treats a different sessionId as a new session (re-applies)', async () => {
+    const now = new Date('2026-06-01T12:00:00.000Z');
+    await syncSession(usuarioId, 'sess-a', [{ regraId: regra1, qualidade: 4 }], { now });
+    // A different sessionId re-applies the grade (reps advances to 2).
+    await syncSession(usuarioId, 'sess-b', [{ regraId: regra1, qualidade: 4 }], { now });
+    const progress = await prisma.progressoUsuario.findUniqueOrThrow({
+      where: { usuarioId_regraId: { usuarioId, regraId: regra1 } },
+    });
+    expect(progress.reps).toBe(2);
+    expect(progress.historico).toHaveLength(2);
+  });
+
   it('updates ultimoAcesso to now (FR-15)', async () => {
     const now = new Date('2026-06-01T12:00:00.000Z');
-    await syncSession(usuarioId, [{ regraId: regra1, qualidade: 4 }], { now });
+    await syncSession(usuarioId, 'sess-ultimo', [{ regraId: regra1, qualidade: 4 }], { now });
     const usuario = await prisma.usuario.findUniqueOrThrow({ where: { id: usuarioId } });
     expect(usuario.ultimoAcesso).toEqual(now);
   });
@@ -79,7 +118,9 @@ describe('syncSession', () => {
       data: { ofensivaAtual: 1, ultimoAcesso: yesterday },
     });
     const today = new Date('2026-06-01T12:00:00.000Z');
-    await syncSession(usuarioId, [{ regraId: regra1, qualidade: 4 }], { now: today });
+    await syncSession(usuarioId, 'sess-consec', [{ regraId: regra1, qualidade: 4 }], {
+      now: today,
+    });
 
     const usuario = await prisma.usuario.findUniqueOrThrow({ where: { id: usuarioId } });
     expect(usuario.ofensivaAtual).toBe(2); // consecutive → increment
@@ -94,7 +135,7 @@ describe('syncSession', () => {
       data: { ofensivaAtual: 5, maiorOfensiva: 5, ultimoAcesso: threeDaysAgo },
     });
     const today = new Date('2026-06-01T12:00:00.000Z');
-    await syncSession(usuarioId, [{ regraId: regra1, qualidade: 4 }], { now: today });
+    await syncSession(usuarioId, 'sess-skip', [{ regraId: regra1, qualidade: 4 }], { now: today });
 
     const usuario = await prisma.usuario.findUniqueOrThrow({ where: { id: usuarioId } });
     expect(usuario.ofensivaAtual).toBe(1); // skipped days → new streak
@@ -112,7 +153,7 @@ describe('syncSession', () => {
       data: { ofensivaAtual: 3, ultimoAcesso: yesterday },
     });
     const today = new Date('2026-06-01T12:00:00.000Z');
-    await syncSession(usuarioId, [{ regraId: regra1, qualidade: 4 }], { now: today });
+    await syncSession(usuarioId, 'sess-below', [{ regraId: regra1, qualidade: 4 }], { now: today });
 
     const usuario = await prisma.usuario.findUniqueOrThrow({ where: { id: usuarioId } });
     expect(usuario.ofensivaAtual).toBe(0); // below threshold → reset
@@ -129,7 +170,9 @@ describe('syncSession', () => {
     });
     const today = new Date('2026-06-01T12:00:00.000Z');
     // Even a single-rule batch counts as one session in sessoes mode.
-    await syncSession(usuarioId, [{ regraId: regra1, qualidade: 4 }], { now: today });
+    await syncSession(usuarioId, 'sess-sessoes', [{ regraId: regra1, qualidade: 4 }], {
+      now: today,
+    });
 
     const usuario = await prisma.usuario.findUniqueOrThrow({ where: { id: usuarioId } });
     expect(usuario.ofensivaAtual).toBe(3); // consecutive session → increment
@@ -142,6 +185,7 @@ describe('syncSession', () => {
     await expect(
       syncSession(
         usuarioId,
+        'sess-rollback',
         [
           { regraId: validRegra, qualidade: 4 },
           { regraId: missingRegra, qualidade: 4 },
@@ -168,7 +212,7 @@ describe('syncSession', () => {
       data: { ofensivaAtual: 1, ultimoAcesso: lastAccess },
     });
     const now = new Date('2026-06-01T03:30:00.000Z');
-    await syncSession(usuarioId, [{ regraId: regra1, qualidade: 4 }], { now });
+    await syncSession(usuarioId, 'sess-midnight', [{ regraId: regra1, qualidade: 4 }], { now });
 
     const usuario = await prisma.usuario.findUniqueOrThrow({ where: { id: usuarioId } });
     expect(usuario.ofensivaAtual).toBe(2); // consecutive in Sao Paulo
@@ -183,7 +227,7 @@ describe('syncSession', () => {
       data: { ofensivaAtual: 4, ultimoAcesso: lastAccess },
     });
     const now = new Date('2026-06-01T15:00:00.000Z'); // 12:00 Sao Paulo, June 1
-    await syncSession(usuarioId, [{ regraId: regra1, qualidade: 4 }], { now });
+    await syncSession(usuarioId, 'sess-sameday', [{ regraId: regra1, qualidade: 4 }], { now });
 
     const usuario = await prisma.usuario.findUniqueOrThrow({ where: { id: usuarioId } });
     expect(usuario.ofensivaAtual).toBe(4); // same Sao Paulo day → no increment

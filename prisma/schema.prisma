@@ -26,6 +26,7 @@ model Usuario {
   ultimoAcesso   DateTime  @default(now())
   cadernos       Caderno[]
   progressos     ProgressoUsuario[]
+  sessoes        SessaoEstudo[]
   configuracao   ConfiguracaoUsuario?
 }
 
@@ -114,6 +115,20 @@ model ProgressoUsuario {
   historico       Json     @default("[]") // Log of dates and grades (1 to 4)
 
   @@unique([usuarioId, regraId])
+}
+
+// --- SESSION IDEMPOTENCY (issue #22) ---
+// Stores the outcome of an applied study session so a replay of the same
+// sessionId returns the original result without re-applying SRS updates.
+model SessaoEstudo {
+  id        String   @id // the sessionId (idempotency key, client-provided)
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+  // The stored result: [{regraId, proximaRevisao}] as computed on first apply.
+  resultados Json
+  criadaEm  DateTime @default(now())
+
+  @@unique([usuarioId, id])
 }
 
 // --- USER SETTINGS (AD-10) ---
