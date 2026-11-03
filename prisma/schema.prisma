@@ -1,0 +1,11 @@
+// 9Atos — Prisma schema (stub)
+// Full schema lands in task 1.1 (#7). Per #2, only generator + datasource for now.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
