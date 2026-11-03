@@ -47,8 +47,8 @@ cd 9atos
 
 ## Configuration
 
-| Variable | Description | Default |
-| -------- | ----------- | ------- |
+| Variable      | Description     | Default |
+| ------------- | --------------- | ------- |
 | `EXAMPLE_VAR` | Example setting | `value` |
 
 ## Contributing

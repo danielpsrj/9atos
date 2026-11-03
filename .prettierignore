@@ -1,0 +1,8 @@
+node_modules
+.next
+out
+build
+package-lock.json
+next-env.d.ts
+9atos_technical_specification.md
+IMPLEMENTATION_PLAN.md
