@@ -4,7 +4,11 @@ import { areaRepository } from './area';
 
 describe('areaRepository', () => {
   beforeEach(async () => {
-    // Clean slate: remove any areas left over from prior runs.
+    // Clean slate in FK order (children first) so a prior test file's leftover
+    // disciplinas/topicos/regras can't block the area delete.
+    await prisma.regra.deleteMany();
+    await prisma.topico.deleteMany();
+    await prisma.disciplina.deleteMany();
     await prisma.area.deleteMany();
   });
 

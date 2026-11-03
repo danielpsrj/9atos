@@ -7,6 +7,7 @@ describe('disciplinaRepository', () => {
 
   beforeEach(async () => {
     // Clean slate, children first (RESTRICT FK).
+    await prisma.regra.deleteMany();
     await prisma.topico.deleteMany();
     await prisma.disciplina.deleteMany();
     await prisma.area.deleteMany();
