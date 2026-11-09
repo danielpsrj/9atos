@@ -8,9 +8,6 @@
     "openNav": "Abrir navegação",
     "closeNav": "Fechar navegação"
   },
-  "Header": {
-    "slot": "Cabeçalho"
-  },
   "Common": {
     "backHome": "Voltar ao início"
   },
@@ -20,7 +17,10 @@
   },
   "Overview": {
     "title": "Visão Geral",
-    "description": "O painel (sequência, meta diária, anéis de progresso dos cadernos) chega na Fase 6."
+    "streakDays": "{days} dias",
+    "streakAria": "Sequência atual: {days} dias",
+    "goalProgress": "{done}/{goal} regras",
+    "goalAria": "Meta diária: {done} de {goal} regras revisadas hoje"
   },
   "Notebooks": {
     "title": "Cadernos",

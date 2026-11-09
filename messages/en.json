@@ -8,9 +8,6 @@
     "openNav": "Open navigation",
     "closeNav": "Close navigation"
   },
-  "Header": {
-    "slot": "Header slot"
-  },
   "Common": {
     "backHome": "Back to home"
   },
@@ -20,7 +17,10 @@
   },
   "Overview": {
     "title": "Overview",
-    "description": "The dashboard (streak, daily goal, notebook progress rings) arrives in Phase 6."
+    "streakDays": "{days} days",
+    "streakAria": "Current streak: {days} days",
+    "goalProgress": "{done}/{goal} rules",
+    "goalAria": "Daily goal: {done} of {goal} rules reviewed today"
   },
   "Notebooks": {
     "title": "Notebooks",
