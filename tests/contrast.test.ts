@@ -60,7 +60,7 @@ function contrast(fg: string, bg: string): number {
 
 // Every foreground/background pair the shell renders. `aa` is the threshold:
 // 4.5:1 for normal text (AA), 3.0:1 for large text / UI components.
-const PAIRS: Array<{ fg: TokenName; bg: TokenName; aa: number; note: string }> = [
+const PAIRS: { fg: TokenName; bg: TokenName; aa: number; note: string }[] = [
   { fg: 'text-primary', bg: 'bg-primary', aa: 4.5, note: 'body text on app background' },
   { fg: 'text-primary', bg: 'bg-secondary', aa: 4.5, note: 'body text on cards/panels' },
   { fg: 'text-secondary', bg: 'bg-primary', aa: 4.5, note: 'hints/labels on app background' },

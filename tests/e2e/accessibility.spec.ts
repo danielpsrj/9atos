@@ -21,10 +21,7 @@ for (const locale of LOCALES) {
       const blocking = results.violations.filter(
         (v) => v.impact === 'critical' || v.impact === 'serious',
       );
-      expect(
-        blocking,
-        `axe violations:\n${JSON.stringify(blocking, null, 2)}`,
-      ).toEqual([]);
+      expect(blocking, `axe violations:\n${JSON.stringify(blocking, null, 2)}`).toEqual([]);
     });
 
     test('focus ring is sapphire on the first focusable element', async ({ page }) => {
@@ -47,7 +44,7 @@ for (const locale of LOCALES) {
           const el = document.activeElement as HTMLElement | null;
           return el ? getComputedStyle(el).outlineColor : null;
         });
-        expect(color, `nav link ${i + 1} focus ring`).toBe(SAPPHIRE);
+        expect(color, `nav link ${String(i + 1)} focus ring`).toBe(SAPPHIRE);
       }
     });
 
@@ -57,8 +54,7 @@ for (const locale of LOCALES) {
       // reliable proxy) so the React keydown handler is attached before keys.
       await page.waitForLoadState('networkidle');
       await page.keyboard.press('Tab'); // first nav link
-      const label = () =>
-        page.evaluate(() => (document.activeElement as HTMLElement).textContent ?? '');
+      const label = () => page.evaluate(() => (document.activeElement as HTMLElement).textContent);
 
       const first = await label();
       await page.keyboard.press('ArrowDown');

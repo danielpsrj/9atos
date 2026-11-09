@@ -241,7 +241,7 @@ h6 {
        briefly in the wrong color. Freeze the outline-color transition so the
        sapphire ring appears instantly; other color transitions (hover, etc.)
        are left untouched. */
-    transition-property: color, background-color, border-color,
-      text-decoration-color, fill, stroke !important;
+    transition-property:
+      color, background-color, border-color, text-decoration-color, fill, stroke !important;
   }
 }
