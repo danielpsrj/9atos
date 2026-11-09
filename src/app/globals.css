@@ -219,9 +219,16 @@ h6 {
      `outline` (not box-shadow) follows border-radius in all modern browsers and
      is the most robust, screen-reader-friendly focus style. The sapphire token
      (--primary, #64ffda) has >= 12:1 contrast on both backgrounds, so the ring
-     is always visible. */
+     is always visible.
+
+     Cascade note: the Shadcn base rule `* { outline-color: ring/50 }` sits in
+     the same @layer base and is emitted AFTER this rule, so it would win on
+     source order (Tailwind also normalizes `*:focus-visible` to `:focus-visible`,
+     removing any specificity edge). `!important` guarantees the sapphire ring
+     always applies — a focus indicator is a critical a11y feature that must
+     never be overridden. */
   :focus-visible {
-    outline: 2px solid var(--primary);
+    outline: 2px solid var(--primary) !important;
     outline-offset: 2px;
   }
 }

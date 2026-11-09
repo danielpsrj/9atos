@@ -53,6 +53,9 @@ for (const locale of LOCALES) {
 
     test('arrow keys move focus through the nav (wrapping)', async ({ page }) => {
       await page.goto(`/${locale}`);
+      // The nav is a client component; wait for hydration (networkidle is a
+      // reliable proxy) so the React keydown handler is attached before keys.
+      await page.waitForLoadState('networkidle');
       await page.keyboard.press('Tab'); // first nav link
       const label = () =>
         page.evaluate(() => (document.activeElement as HTMLElement).textContent ?? '');
