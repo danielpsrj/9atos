@@ -28,7 +28,18 @@
     "study": "Estudar",
     "ringAria": "{percent}% das regras dominadas",
     "ringPercent": "{percent}%",
-    "noArea": "Sem área"
+    "noArea": "Sem área",
+    "newNotebook": "Novo Caderno",
+    "dialogTitle": "Novo Caderno",
+    "dialogDescription": "Crie um caderno para organizar suas regras.",
+    "nameLabel": "Nome",
+    "namePlaceholder": "ex.: Constitucional - Direitos Fundamentais",
+    "descriptionLabel": "Descrição",
+    "descriptionPlaceholder": "Opcional",
+    "nameRequired": "O nome é obrigatório.",
+    "create": "Criar",
+    "creating": "Criando…",
+    "createError": "Não foi possível criar o caderno. Tente novamente."
   },
   "Notebooks": {
     "title": "Cadernos",

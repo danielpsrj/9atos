@@ -28,7 +28,18 @@
     "study": "Study",
     "ringAria": "{percent}% of rules mastered",
     "ringPercent": "{percent}%",
-    "noArea": "No area"
+    "noArea": "No area",
+    "newNotebook": "New Notebook",
+    "dialogTitle": "New Notebook",
+    "dialogDescription": "Create a notebook to organize your rules.",
+    "nameLabel": "Name",
+    "namePlaceholder": "e.g. Constitutional - Fundamental Rights",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Optional",
+    "nameRequired": "Name is required.",
+    "create": "Create",
+    "creating": "Creating…",
+    "createError": "Could not create the notebook. Try again."
   },
   "Notebooks": {
     "title": "Notebooks",
