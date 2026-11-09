@@ -2,13 +2,14 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Flame, Target } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { buildDashboard } from '@/lib/dashboard';
+import { NotebookGrid } from '@/components/dashboard/notebook-grid';
 
-// Overview / dashboard (issue #32, FR-10, FR-12). A server component that
-// builds the dashboard payload in one pass (no client fan-out) and renders the
-// Screen 1 header: the "Overview" title plus the gamification widget (gold
-// flame + current streak) and the goal widget (target + today's progress
-// against the configured daily goal). The notebook grid (#33) and the
-// first-run state (#35) render below this header.
+// Overview / dashboard (issue #32 header, #33 notebook grid; FR-10, FR-11,
+// FR-12). A server component that builds the dashboard payload in one pass (no
+// client fan-out) and renders the Screen 1 layout: the header (title + gold
+// flame streak widget + target goal widget) above the "Your Notebooks" grid of
+// cards with animated sapphire progress rings. The first-run state (#35) will
+// replace the grid when the user has no notebooks and no progress.
 export default async function OverviewPage({
   params,
 }: Readonly<{
@@ -26,6 +27,7 @@ export default async function OverviewPage({
   const ofensivaAtual = dashboard?.ofensivaAtual ?? 0;
   const revisadasHoje = dashboard?.revisadasHoje ?? 0;
   const metaDiaria = dashboard?.metaDiaria ?? 0;
+  const cadernos = dashboard?.cadernos ?? [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -58,6 +60,16 @@ export default async function OverviewPage({
           </div>
         </div>
       </header>
+
+      {/* "Your Notebooks" grid (spec §5.2): cards with area tag, title, an
+         animated sapphire progress ring, and a Study button. Renders a helpful
+         empty state + CTA when the user has no notebooks. */}
+      <section aria-labelledby="notebooks-heading" className="flex flex-col gap-4">
+        <h2 id="notebooks-heading" className="text-lg font-semibold text-text-primary">
+          {t('notebooksTitle')}
+        </h2>
+        <NotebookGrid cadernos={cadernos} />
+      </section>
     </div>
   );
 }

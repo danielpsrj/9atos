@@ -20,7 +20,15 @@
     "streakDays": "{days} dias",
     "streakAria": "Sequência atual: {days} dias",
     "goalProgress": "{done}/{goal} regras",
-    "goalAria": "Meta diária: {done} de {goal} regras revisadas hoje"
+    "goalAria": "Meta diária: {done} de {goal} regras revisadas hoje",
+    "notebooksTitle": "Seus Cadernos",
+    "emptyTitle": "Nenhum caderno ainda",
+    "emptyDescription": "Crie seu primeiro caderno para começar a estudar.",
+    "emptyCta": "Criar caderno",
+    "study": "Estudar",
+    "ringAria": "{percent}% das regras dominadas",
+    "ringPercent": "{percent}%",
+    "noArea": "Sem área"
   },
   "Notebooks": {
     "title": "Cadernos",

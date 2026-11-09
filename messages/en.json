@@ -20,7 +20,15 @@
     "streakDays": "{days} days",
     "streakAria": "Current streak: {days} days",
     "goalProgress": "{done}/{goal} rules",
-    "goalAria": "Daily goal: {done} of {goal} rules reviewed today"
+    "goalAria": "Daily goal: {done} of {goal} rules reviewed today",
+    "notebooksTitle": "Your Notebooks",
+    "emptyTitle": "No notebooks yet",
+    "emptyDescription": "Create your first notebook to start studying.",
+    "emptyCta": "Create a notebook",
+    "study": "Study",
+    "ringAria": "{percent}% of rules mastered",
+    "ringPercent": "{percent}%",
+    "noArea": "No area"
   },
   "Notebooks": {
     "title": "Notebooks",
