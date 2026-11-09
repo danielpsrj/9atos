@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { buildDashboard } from '@/lib/dashboard';
 import { NotebookGrid } from '@/components/dashboard/notebook-grid';
 import { NewNotebookDialog } from '@/components/dashboard/new-notebook-dialog';
+import { OnboardingScreen } from '@/components/dashboard/onboarding-screen';
 
 // Overview / dashboard (issue #32 header, #33 notebook grid; FR-10, FR-11,
 // FR-12). A server component that builds the dashboard payload in one pass (no
@@ -62,19 +63,24 @@ export default async function OverviewPage({
         </div>
       </header>
 
-      {/* "Your Notebooks" grid (spec §5.2): cards with area tag, title, an
-         animated sapphire progress ring, and a Study button. Renders a helpful
-         empty state + CTA when the user has no notebooks. */}
-      <section aria-labelledby="notebooks-heading" className="flex flex-col gap-4">
-        {/* Section header: title left, "New Notebook" dialog trigger right. */}
-        <div className="flex items-center justify-between gap-4">
-          <h2 id="notebooks-heading" className="text-lg font-semibold text-text-primary">
-            {t('notebooksTitle')}
-          </h2>
-          <NewNotebookDialog />
-        </div>
-        <NotebookGrid cadernos={cadernos} />
-      </section>
+      {/* First run (0 notebooks): the onboarding screen replaces the grid
+          (issue #35). It explains 9Atos and offers import / sample-data CTAs.
+          Once a notebook exists, the "Your Notebooks" grid + New Notebook
+          dialog take over (issues #33/#34). */}
+      {cadernos.length === 0 ? (
+        <OnboardingScreen />
+      ) : (
+        <section aria-labelledby="notebooks-heading" className="flex flex-col gap-4">
+          {/* Section header: title left, "New Notebook" dialog trigger right. */}
+          <div className="flex items-center justify-between gap-4">
+            <h2 id="notebooks-heading" className="text-lg font-semibold text-text-primary">
+              {t('notebooksTitle')}
+            </h2>
+            <NewNotebookDialog />
+          </div>
+          <NotebookGrid cadernos={cadernos} />
+        </section>
+      )}
     </div>
   );
 }

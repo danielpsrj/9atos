@@ -22,9 +22,6 @@
     "goalProgress": "{done}/{goal} rules",
     "goalAria": "Daily goal: {done} of {goal} rules reviewed today",
     "notebooksTitle": "Your Notebooks",
-    "emptyTitle": "No notebooks yet",
-    "emptyDescription": "Create your first notebook to start studying.",
-    "emptyCta": "Create a notebook",
     "study": "Study",
     "ringAria": "{percent}% of rules mastered",
     "ringPercent": "{percent}%",
@@ -40,6 +37,15 @@
     "create": "Create",
     "creating": "Creating…",
     "createError": "Could not create the notebook. Try again."
+  },
+  "Onboarding": {
+    "title": "Welcome to 9Atos",
+    "description": "9Atos turns studying legislation into a game of spaced repetition: review rules at the right moment, keep your streak alive, and track your progress. To get started, import your own data or use the sample notebook.",
+    "importCta": "Import data",
+    "importHint": "CSV/JSON — available in the Knowledge Base.",
+    "seedCta": "Use sample data",
+    "seedWorking": "Creating sample notebook…",
+    "seedError": "Could not create the sample notebook. Try again."
   },
   "Notebooks": {
     "title": "Notebooks",

@@ -22,9 +22,6 @@
     "goalProgress": "{done}/{goal} regras",
     "goalAria": "Meta diária: {done} de {goal} regras revisadas hoje",
     "notebooksTitle": "Seus Cadernos",
-    "emptyTitle": "Nenhum caderno ainda",
-    "emptyDescription": "Crie seu primeiro caderno para começar a estudar.",
-    "emptyCta": "Criar caderno",
     "study": "Estudar",
     "ringAria": "{percent}% das regras dominadas",
     "ringPercent": "{percent}%",
@@ -40,6 +37,15 @@
     "create": "Criar",
     "creating": "Criando…",
     "createError": "Não foi possível criar o caderno. Tente novamente."
+  },
+  "Onboarding": {
+    "title": "Bem-vindo ao 9Atos",
+    "description": "O 9Atos transforma o estudo de legislação em um jogo de repetição espaçada: revise regras no momento certo, mantenha sua sequência e acompanhe seu progresso. Para começar, importe seus próprios dados ou use o caderno de exemplo.",
+    "importCta": "Importar dados",
+    "importHint": "CSV/JSON — disponível na Base de Conhecimento.",
+    "seedCta": "Usar dados de exemplo",
+    "seedWorking": "Criando caderno de exemplo…",
+    "seedError": "Não foi possível criar o caderno de exemplo. Tente novamente."
   },
   "Notebooks": {
     "title": "Cadernos",

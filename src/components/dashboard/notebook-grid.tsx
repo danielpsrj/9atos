@@ -1,7 +1,6 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Link } from '@/navigation';
 import { Button } from '@/components/ui/button';
 import { ProgressRing } from '@/components/dashboard/progress-ring';
 import type { DashboardNotebook } from '@/lib/dashboard';
@@ -9,22 +8,11 @@ import type { DashboardNotebook } from '@/lib/dashboard';
 // "Your Notebooks" grid (issue #33, FR-11, spec §5.2 Screen 1). A client
 // component so each card's progress ring can animate on first render. Renders
 // one card per notebook (area tag, title, sapphire progress ring, Study button
-// pinned to the card's bottom) on a responsive grid, or a helpful empty state
-// with a CTA to the notebooks page when the user has none.
+// pinned to the card's bottom) on a responsive grid. The first-run / onboarding
+// screen (issue #35) is rendered by the Overview page instead of this grid when
+// the user has no notebooks.
 export function NotebookGrid({ cadernos }: Readonly<{ cadernos: DashboardNotebook[] }>) {
   const t = useTranslations('Overview');
-
-  if (cadernos.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-bg-secondary/40 px-6 py-16 text-center">
-        <h2 className="text-lg font-semibold text-text-primary">{t('emptyTitle')}</h2>
-        <p className="max-w-md text-base text-text-secondary">{t('emptyDescription')}</p>
-        <Button asChild>
-          <Link href="/notebooks">{t('emptyCta')}</Link>
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
