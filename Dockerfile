@@ -49,5 +49,9 @@ COPY --from=build --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
 
 USER nextjs
 EXPOSE 3000
-# Apply migrations and seed (both idempotent) before starting the server.
-CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && node server.js"]
+# Generate the Prisma client, then apply migrations and seed (all idempotent)
+# before starting the server. `prisma generate` runs at startup because the
+# full node_modules copied from the deps stage overwrites the standalone's
+# generated client with the ungenerated stub; regenerating against the schema
+# (copied above) restores it so migrate/seed and the API can use Prisma.
+CMD ["sh", "-c", "npx prisma generate && npx prisma migrate deploy && npx prisma db seed && node server.js"]
