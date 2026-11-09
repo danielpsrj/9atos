@@ -6,7 +6,7 @@
 // (useTranslations), and hosts the locale switcher. Icons come from
 // lucide-react (plan §2.4).
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 // @/navigation (next-intl v4): Link auto-prefixes the locale, usePathname
 // returns the locale-less path (so active-route matching works), and
@@ -42,10 +42,42 @@ export function Nav() {
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
 
   // Switch locale while staying on the same page (next-intl router).
   function switchLocale(next: string) {
     router.replace(pathname, { locale: next });
+  }
+
+  // Arrow-key navigation for the nav (issue #31): ArrowDown/ArrowUp move between
+  // links (wrapping), Home/End jump to the first/last. Tab/Shift+Tab and
+  // Enter/Space still work natively, so the nav is fully operable by keyboard.
+  function handleNavKeyDown(e: React.KeyboardEvent) {
+    const nav = navRef.current;
+    if (!nav) return;
+    const links = Array.from(nav.querySelectorAll<HTMLAnchorElement>('a[href]'));
+    const current = links.indexOf(document.activeElement as HTMLAnchorElement);
+    if (current === -1) return;
+
+    let next = current;
+    switch (e.key) {
+      case 'ArrowDown':
+        next = (current + 1) % links.length;
+        break;
+      case 'ArrowUp':
+        next = (current - 1 + links.length) % links.length;
+        break;
+      case 'Home':
+        next = 0;
+        break;
+      case 'End':
+        next = links.length - 1;
+        break;
+      default:
+        return;
+    }
+    e.preventDefault();
+    links[next]?.focus();
   }
 
   const localeSwitcher = (
@@ -60,7 +92,6 @@ export function Nav() {
           aria-pressed={locale === loc}
           className={cn(
             'rounded-md px-2 py-1 text-sm transition-colors',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
             locale === loc
               ? 'bg-primary/15 text-primary'
               : 'text-text-secondary hover:bg-bg-secondary hover:text-text-primary',
@@ -73,7 +104,12 @@ export function Nav() {
   );
 
   const links = (
-    <nav aria-label="Primary" className="flex flex-col gap-1 p-3">
+    <nav
+      ref={navRef}
+      aria-label="Primary"
+      className="flex flex-col gap-1 p-3"
+      onKeyDown={handleNavKeyDown}
+    >
       {NAV_ITEMS.map((item) => {
         const Icon = item.icon;
         const active = isActive(pathname, item.href);
@@ -87,7 +123,6 @@ export function Nav() {
             aria-current={active ? 'page' : undefined}
             className={cn(
               'flex items-center gap-3 rounded-md px-3 py-2 text-base transition-colors',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               active
                 ? 'bg-primary/15 text-primary'
                 : 'text-text-secondary hover:bg-bg-secondary hover:text-text-primary',
@@ -122,7 +157,7 @@ export function Nav() {
           onClick={() => {
             setOpen(true);
           }}
-          className="rounded-md p-2 text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="rounded-md p-2 text-text-primary"
         >
           <Menu className="size-6" aria-hidden />
         </button>
@@ -147,7 +182,7 @@ export function Nav() {
                 onClick={() => {
                   setOpen(false);
                 }}
-                className="rounded-md p-2 text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="rounded-md p-2 text-text-primary"
               >
                 <X className="size-6" aria-hidden />
               </button>

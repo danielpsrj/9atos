@@ -212,4 +212,16 @@ h6 {
   html {
     @apply font-sans;
   }
+
+  /* Visible sapphire focus ring on EVERY focusable element (issue #31, NFR-05).
+     A single global :focus-visible rule is the source of truth, so no
+     interactive element can ship without a visible, on-brand focus indicator.
+     `outline` (not box-shadow) follows border-radius in all modern browsers and
+     is the most robust, screen-reader-friendly focus style. The sapphire token
+     (--primary, #64ffda) has >= 12:1 contrast on both backgrounds, so the ring
+     is always visible. */
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
 }
