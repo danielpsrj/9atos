@@ -203,8 +203,12 @@ h6 {
 }
 
 @layer base {
+  /* `outline-ring/50` is intentionally omitted: it set a 50%-opacity outline
+     color on every element that fought the global :focus-visible sapphire ring
+     (issue #31). The :focus-visible rule below is the single source of truth
+     for focus outlines. */
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
