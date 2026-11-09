@@ -111,7 +111,6 @@ export function NewNotebookDialog() {
                 setName(e.target.value);
               }}
               placeholder={t('namePlaceholder')}
-              required
               aria-invalid={error !== null}
               aria-describedby={error !== null ? 'notebook-name-error' : undefined}
               className="h-9 w-full rounded-md border border-border bg-bg-primary px-3 text-sm text-text-primary placeholder:text-text-secondary focus-visible:outline-none"
