@@ -1,0 +1,37 @@
+{
+  "Nav": {
+    "brand": "9Atos",
+    "overview": "Overview",
+    "notebooks": "Notebooks",
+    "knowledge": "Knowledge Base",
+    "settings": "Settings",
+    "openNav": "Open navigation",
+    "closeNav": "Close navigation"
+  },
+  "Header": {
+    "slot": "Header slot"
+  },
+  "Common": {
+    "backHome": "Back to home"
+  },
+  "NotFound": {
+    "title": "Page not found",
+    "description": "The address you accessed does not exist or was moved."
+  },
+  "Overview": {
+    "title": "Overview",
+    "description": "The dashboard (streak, daily goal, notebook progress rings) arrives in Phase 6."
+  },
+  "Notebooks": {
+    "title": "Notebooks",
+    "description": "Your notebooks and the notebook builder arrive in Phase 6."
+  },
+  "Knowledge": {
+    "title": "Knowledge Base",
+    "description": "The knowledge browser, rule editor, and import flow arrive in Phase 8."
+  },
+  "Settings": {
+    "title": "Settings",
+    "description": "The configurable tunables (streak, daily goal, timer, Zen Mode, session size) arrive in Phase 6."
+  }
+}

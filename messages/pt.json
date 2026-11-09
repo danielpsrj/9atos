@@ -1,0 +1,37 @@
+{
+  "Nav": {
+    "brand": "9Atos",
+    "overview": "Visão Geral",
+    "notebooks": "Cadernos",
+    "knowledge": "Base de Conhecimento",
+    "settings": "Configurações",
+    "openNav": "Abrir navegação",
+    "closeNav": "Fechar navegação"
+  },
+  "Header": {
+    "slot": "Cabeçalho"
+  },
+  "Common": {
+    "backHome": "Voltar ao início"
+  },
+  "NotFound": {
+    "title": "Página não encontrada",
+    "description": "O endereço que você acessou não existe ou foi movido."
+  },
+  "Overview": {
+    "title": "Visão Geral",
+    "description": "O painel (sequência, meta diária, anéis de progresso dos cadernos) chega na Fase 6."
+  },
+  "Notebooks": {
+    "title": "Cadernos",
+    "description": "Seus cadernos e o criador de cadernos chegam na Fase 6."
+  },
+  "Knowledge": {
+    "title": "Base de Conhecimento",
+    "description": "O navegador de conhecimento, o editor de regras e o fluxo de importação chegam na Fase 8."
+  },
+  "Settings": {
+    "title": "Configurações",
+    "description": "Os ajustes configuráveis (sequência, meta diária, timer, Zen Mode, tamanho da sessão) chegam na Fase 6."
+  }
+}
