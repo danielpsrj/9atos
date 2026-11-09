@@ -234,7 +234,8 @@ h6 {
   :focus-visible {
     outline-width: 2px !important;
     outline-style: solid !important;
-    outline-color: var(--primary) !important;
+    outline-color: #64ffda !important;
     outline-offset: 2px;
+    transition: none !important;
   }
 }
