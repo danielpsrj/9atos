@@ -38,7 +38,16 @@ COPY --from=build /app/public ./public
 COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
 # Static build output (not included in standalone)
 COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Full node_modules from the deps stage: the standalone trace only includes
+# modules imported at runtime, but startup needs the `prisma` CLI (migrate
+# deploy) and `tsx` (to run the seed script). Copying the full tree provides
+# both without a separate migration container.
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
+# Prisma schema + migrations + seed (needed by the startup migrate/seed).
+COPY --from=build --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=build --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
 
 USER nextjs
 EXPOSE 3000
-CMD ["node", "server.js"]
+# Apply migrations and seed (both idempotent) before starting the server.
+CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && node server.js"]
