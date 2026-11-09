@@ -234,8 +234,14 @@ h6 {
   :focus-visible {
     outline-width: 2px !important;
     outline-style: solid !important;
-    outline-color: #64ffda !important;
+    outline-color: var(--primary) !important;
     outline-offset: 2px;
-    transition: none !important;
+    /* The nav's `transition-colors` utility animates outline-color from its
+       unfocused default (currentcolor) to the focus color, which left the ring
+       briefly in the wrong color. Freeze the outline-color transition so the
+       sapphire ring appears instantly; other color transitions (hover, etc.)
+       are left untouched. */
+    transition-property: color, background-color, border-color,
+      text-decoration-color, fill, stroke !important;
   }
 }
