@@ -50,13 +50,37 @@ interface Caderno {
 const SELECTION_KEY = 'notebook-builder-selection';
 const TARGET_KEY = 'notebook-builder-target';
 
+// Read the persisted selection from localStorage (a JSON array of regra ids).
+// Initialized in the useState initializer — NOT in an async effect — so the
+// persist effect writes back the real selection on mount instead of clobbering
+// it with an empty set before the load effect can read it.
+function readStoredSelection(): Set<string> {
+  try {
+    const stored = localStorage.getItem(SELECTION_KEY);
+    if (stored === null) return new Set();
+    const ids = JSON.parse(stored) as string[];
+    return new Set(ids);
+  } catch {
+    return new Set();
+  }
+}
+
+// Read the persisted target notebook id from localStorage (or '' if absent).
+function readStoredTarget(): string {
+  try {
+    return localStorage.getItem(TARGET_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
 export function NotebookBuilder() {
   const t = useTranslations('Notebooks');
 
   const [tree, setTree] = useState<AreaNode[]>([]);
   const [cadernos, setCadernos] = useState<Caderno[]>([]);
-  const [targetCadernoId, setTargetCadernoId] = useState('');
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [targetCadernoId, setTargetCadernoId] = useState(readStoredTarget);
+  const [selected, setSelected] = useState<Set<string>>(readStoredSelection);
   const [alreadyInNotebook, setAlreadyInNotebook] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -65,8 +89,10 @@ export function NotebookBuilder() {
   const [addResult, setAddResult] = useState<number | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
 
-  // Load the tree and the cadernos, and restore the persisted selection and
-  // target notebook from localStorage.
+  // Load the tree and the cadernos. The selection and target notebook are
+  // already restored from localStorage in the useState initializers (above);
+  // here we only validate the persisted target against the loaded cadernos —
+  // if it no longer exists, fall back to the first notebook.
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -84,18 +110,13 @@ export function NotebookBuilder() {
         setTree(treeData);
         setCadernos(cadernosData);
 
-        // Restore the persisted selection and target notebook.
-        const storedSelection = localStorage.getItem(SELECTION_KEY);
-        if (storedSelection !== null) {
-          const ids = JSON.parse(storedSelection) as string[];
-          setSelected(new Set(ids));
-        }
-        const storedTarget = localStorage.getItem(TARGET_KEY);
-        if (storedTarget !== null && cadernosData.some((c) => c.id === storedTarget)) {
-          setTargetCadernoId(storedTarget);
-        } else if (cadernosData.length > 0) {
-          setTargetCadernoId(cadernosData[0]?.id ?? '');
-        }
+        // Validate the persisted target notebook: if it no longer exists, fall
+        // back to the first notebook. (The selection needs no such validation —
+        // a stale regra id simply renders as an unselected checkbox.)
+        setTargetCadernoId((current) => {
+          if (current !== '' && cadernosData.some((c) => c.id === current)) return current;
+          return cadernosData[0]?.id ?? '';
+        });
       } catch {
         if (!cancelled) setLoadError(t('treeError'));
       } finally {
