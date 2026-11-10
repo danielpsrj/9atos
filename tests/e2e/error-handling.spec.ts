@@ -83,9 +83,11 @@ test.describe('error handling (#48)', () => {
 
     // An error toast appears (red accent).
     await expect(page.locator('.cn-toast[data-type="error"]')).toBeVisible();
-    // The recoverable error state is shown — not a blank screen.
+    // The recoverable error state is shown inline (not a blank screen). Target
+    // the inline <p role="alert"> specifically — the same text also appears in
+    // the toast, so a bare getByText is ambiguous.
     await expect(
-      page.getByText('Não foi possível adicionar as regras. Tente novamente.'),
+      page.getByRole('main').getByRole('alert'),
     ).toBeVisible();
 
     // Clean up.
