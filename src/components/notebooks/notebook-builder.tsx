@@ -202,7 +202,11 @@ export function NotebookBuilder() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ regraId }),
         });
-        if (res.ok) added += 1;
+        // A non-ok response is an API failure — throw so the catch block
+        // surfaces a toast + recoverable error state (issue #48, NFR-07).
+        // (fetch only throws on network errors, not on HTTP error statuses.)
+        if (!res.ok) throw new Error();
+        added += 1;
       }
       setAddResult(added);
       // Confirm the success with a toast (issue #48, NFR-07) — gold accent.

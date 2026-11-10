@@ -155,8 +155,11 @@ test.describe('error handling (#48)', () => {
     // The test-only route renders a component that throws during client
     // rendering. The ErrorBoundary (in the shell layout) catches it and shows
     // the themed fallback with a retry action — not a white screen.
+    // (Target the fallback alert specifically — Next.js also renders a
+    // role="alert" route announcer, so a bare getByRole('alert') is ambiguous.)
     await page.goto('/pt-BR/error-boundary-test');
-    await expect(page.getByRole('alert')).toBeVisible();
+    const fallback = page.locator('[role="alert"]').filter({ hasText: 'Algo deu errado' });
+    await expect(fallback).toBeVisible();
     await expect(page.getByText('Algo deu errado')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Tentar novamente' })).toBeVisible();
   });
