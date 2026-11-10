@@ -58,7 +58,26 @@
   },
   "Knowledge": {
     "title": "Base de Conhecimento",
-    "description": "O navegador de conhecimento, o editor de regras e o fluxo de importação chegam na Fase 8."
+    "description": "Importe regras a partir de um arquivo CSV ou JSON, ou gerencie a hierarquia de conhecimento."
+  },
+  "Import": {
+    "uploadTitle": "Importar arquivo",
+    "uploadHint": "Envie um arquivo CSV ou JSON com as suas regras. Limite: 5 MB e 10.000 linhas.",
+    "uploadCta": "Selecionar arquivo",
+    "fileTooLarge": "O arquivo excede o limite de 5 MB.",
+    "previewLoading": "Analisando arquivo…",
+    "previewError": "Não foi possível analisar o arquivo. Tente novamente.",
+    "previewTitle": "Pré-visualização",
+    "rejectedRows": "{count} linha(s) rejeitada(s)",
+    "lineError": "Linha {line}: {message}",
+    "validRows": "{count} regra(s) pronta(s) para importar",
+    "targetTopico": "Tópico de destino",
+    "topicoSeparator": " / ",
+    "confirmImport": "Confirmar importação",
+    "importing": "Importando…",
+    "importError": "Não foi possível importar as regras. Tente novamente.",
+    "importComplete": "{count} regra(s) importada(s)",
+    "skippedRows": "{count} linha(s) rejeitada(s) não foram importada(s)."
   },
   "Settings": {
     "title": "Configurações",

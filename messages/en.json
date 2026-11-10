@@ -58,7 +58,26 @@
   },
   "Knowledge": {
     "title": "Knowledge Base",
-    "description": "The knowledge browser, rule editor, and import flow arrive in Phase 8."
+    "description": "Import rules from a CSV or JSON file, or manage the knowledge hierarchy."
+  },
+  "Import": {
+    "uploadTitle": "Import file",
+    "uploadHint": "Upload a CSV or JSON file with your rules. Limit: 5 MB and 10,000 rows.",
+    "uploadCta": "Select file",
+    "fileTooLarge": "The file exceeds the 5 MB limit.",
+    "previewLoading": "Parsing file…",
+    "previewError": "Could not parse the file. Please try again.",
+    "previewTitle": "Preview",
+    "rejectedRows": "{count} rejected row(s)",
+    "lineError": "Line {line}: {message}",
+    "validRows": "{count} rule(s) ready to import",
+    "targetTopico": "Target topic",
+    "topicoSeparator": " / ",
+    "confirmImport": "Confirm import",
+    "importing": "Importing…",
+    "importError": "Could not import the rules. Please try again.",
+    "importComplete": "{count} rule(s) imported",
+    "skippedRows": "{count} rejected row(s) were not imported."
   },
   "Settings": {
     "title": "Settings",

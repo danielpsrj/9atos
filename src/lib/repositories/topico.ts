@@ -14,6 +14,27 @@ export const topicoRepository = {
     });
   },
 
+  /** List every topico with its disciplina and area names (for the import
+   *  screen's target selector, issue #45). */
+  async listWithHierarchy(): Promise<
+    { id: string; nome: string; disciplina: string; area: string }[]
+  > {
+    const topicos = await prisma.topico.findMany({
+      include: { disciplina: { include: { area: true } } },
+      orderBy: [
+        { disciplina: { area: { nome: 'asc' } } },
+        { disciplina: { nome: 'asc' } },
+        { nome: 'asc' },
+      ],
+    });
+    return topicos.map((t) => ({
+      id: t.id,
+      nome: t.nome,
+      disciplina: t.disciplina.nome,
+      area: t.disciplina.area.nome,
+    }));
+  },
+
   async getById(id: string): Promise<Topico | null> {
     return prisma.topico.findUnique({ where: { id } });
   },

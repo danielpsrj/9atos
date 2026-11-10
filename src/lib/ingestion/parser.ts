@@ -51,11 +51,19 @@ export interface ParseResult {
   errors: LineError[];
   /** Warnings (e.g. a topic that would end up with < 4 rules). */
   warnings: string[];
+  /** The total number of data rows in the file (valid + rejected; the CSV
+   *  header is not counted). Used to enforce the import row limit. */
+  rowCount: number;
 }
 
 /** AD-14 / plan §7: a topic needs at least this many rules for safe distractor
  *  borrowing in the multiple-choice game. */
 export const MIN_RULES_PER_TOPIC = 4;
+
+/** Import limits (plan §2.4): larger files are rejected with a clear error
+ *  before parsing. */
+export const MAX_IMPORT_BYTES = 5 * 1024 * 1024; // 5 MB
+export const MAX_IMPORT_ROWS = 10_000;
 
 // ── CSV parsing ──────────────────────────────────────────────────────────────
 
@@ -184,7 +192,12 @@ export function parseCsv(text: string): ParseResult {
   // Drop a single leading UTF-8 BOM if present.
   const first = rows[0];
   if (first === undefined) {
-    return { regras, errors: [{ line: 1, message: 'File is empty.' }], warnings: [] };
+    return {
+      regras,
+      errors: [{ line: 1, message: 'File is empty.' }],
+      warnings: [],
+      rowCount: 0,
+    };
   }
   const header = first.map((h) => h.replace(/^\uFEFF/, '').trim());
   const expected = CSV_HEADER.join(',');
@@ -198,14 +211,17 @@ export function parseCsv(text: string): ParseResult {
         },
       ],
       warnings: [],
+      rowCount: 0,
     };
   }
 
+  let rowCount = 0;
   for (let i = 1; i < rows.length; i += 1) {
     const row = rows[i];
     if (row === undefined) continue;
     // Skip fully-empty rows (e.g. a trailing blank line).
     if (row.every((f) => f.trim().length === 0)) continue;
+    rowCount += 1;
     const line = i + 1; // 1-based line number (header is line 1).
     const mapped = mapCsvRow(row, line);
     if ('message' in mapped) {
@@ -215,7 +231,7 @@ export function parseCsv(text: string): ParseResult {
     }
   }
 
-  return { regras, errors, warnings: topicShortageWarnings(regras.length) };
+  return { regras, errors, warnings: topicShortageWarnings(regras.length), rowCount };
 }
 
 // ── JSON parsing ─────────────────────────────────────────────────────────────
@@ -310,7 +326,12 @@ export function parseJson(text: string): ParseResult {
     doc = JSON.parse(text);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'invalid JSON';
-    return { regras, errors: [{ line: 1, message: `Invalid JSON: ${message}` }], warnings: [] };
+    return {
+      regras,
+      errors: [{ line: 1, message: `Invalid JSON: ${message}` }],
+      warnings: [],
+      rowCount: 0,
+    };
   }
 
   if (!Array.isArray(doc)) {
@@ -318,11 +339,12 @@ export function parseJson(text: string): ParseResult {
       regras,
       errors: [{ line: 1, message: 'JSON root must be an array of regra objects.' }],
       warnings: [],
+      rowCount: 0,
     };
   }
 
   // Iterate over an unknown[] so each row is `unknown` (not `any`), keeping the
-  // no-unsafe-assignment rule happy.
+  // no-unsafe-assignment rule happy. The row count is the array length.
   const rows: unknown[] = doc;
   for (let i = 0; i < rows.length; i += 1) {
     const row = rows[i];
@@ -339,7 +361,12 @@ export function parseJson(text: string): ParseResult {
     }
   }
 
-  return { regras, errors, warnings: topicShortageWarnings(regras.length) };
+  return {
+    regras,
+    errors,
+    warnings: topicShortageWarnings(regras.length),
+    rowCount: rows.length,
+  };
 }
 
 // ── Shared ───────────────────────────────────────────────────────────────────

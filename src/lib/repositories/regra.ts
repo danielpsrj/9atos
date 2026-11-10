@@ -49,6 +49,14 @@ export const regraRepository = {
     return prisma.regra.create({ data: input });
   },
 
+  /** Bulk-insert regras (the import flow, issue #45). Returns the number of
+   *  rows written. */
+  async createMany(inputs: CreateRegraInput[]): Promise<number> {
+    if (inputs.length === 0) return 0;
+    const result = await prisma.regra.createMany({ data: inputs });
+    return result.count;
+  },
+
   async update(id: string, input: UpdateRegraInput): Promise<Regra> {
     return prisma.regra.update({ where: { id }, data: input });
   },
