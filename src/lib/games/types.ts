@@ -54,6 +54,8 @@ export interface MultipleChoiceItem {
   question: string;
   options: string[];
   correctIndex: number;
+  /** Present only when the rule has a justificativa (revealed on a wrong pick). */
+  justificativa?: string;
 }
 
 /** An MC session. Every question has the same number of options. */

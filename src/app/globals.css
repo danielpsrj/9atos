@@ -142,6 +142,49 @@
   }
 }
 
+/* Matching game (issue #39): the sapphire beam that connects a correct pair,
+   then fades out (150 ms draw + 250 ms fade, the §2.4 tokens). A box-shadow
+   glow that brightens then fades. */
+@keyframes match-beam {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 0%, transparent);
+    opacity: 1;
+  }
+  37.5% {
+    /* 150 ms of the 400 ms total: the beam draws (glow brightens). */
+    box-shadow: 0 0 12px 2px var(--primary);
+    opacity: 1;
+  }
+  100% {
+    /* 250 ms: the beam fades out. */
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 0%, transparent);
+    opacity: 0;
+  }
+}
+
+/* The dark red error flash on a wrong pair (150 ms in / 250 ms out). */
+@keyframes match-error {
+  0% {
+    background-color: color-mix(in srgb, var(--error) 0%, transparent);
+  }
+  37.5% {
+    background-color: color-mix(in srgb, var(--error) 25%, transparent);
+  }
+  100% {
+    background-color: color-mix(in srgb, var(--error) 0%, transparent);
+  }
+}
+
+.match-beam {
+  animation: match-beam calc(var(--duration-fast) + var(--duration-base)) var(--ease-entrance)
+    forwards;
+}
+
+.match-error {
+  animation: match-error calc(var(--duration-fast) + var(--duration-base)) var(--ease-entrance)
+    forwards;
+}
+
 /* Global base: the app background, main text color, and the system font stack.
    Type scale (plan §2.4): body text-base/1.5; headings use a tighter 1.25. */
 body {

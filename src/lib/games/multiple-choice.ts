@@ -80,7 +80,13 @@ export function buildMultipleChoiceSession(
 
     const options = seededShuffle([rule.respostaCerta, ...distractors], `${sessionId}:${rule.id}`);
     const correctIndex = options.indexOf(rule.respostaCerta);
-    return { regraId: rule.id, question: rule.pergunta, options, correctIndex };
+    return {
+      regraId: rule.id,
+      question: rule.pergunta,
+      options,
+      correctIndex,
+      justificativa: rule.justificativa ?? undefined,
+    };
   });
 
   return { id: sessionId, type: 'multiple-choice', items };

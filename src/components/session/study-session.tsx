@@ -5,16 +5,25 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { SessionChrome } from '@/components/session/session-chrome';
 import { FlashcardGame } from '@/components/session/flashcard-game';
+import { MatchingGame } from '@/components/session/matching-game';
+import { MultipleChoiceGame } from '@/components/session/multiple-choice-game';
+import { ClozeGame } from '@/components/session/cloze-game';
 import { ResultsSummary } from '@/components/session/results-summary';
-import type { GameSession, SessionResult } from '@/lib/games';
+import {
+  type GameSession,
+  type MatchColumnEntry,
+  type MatchPair,
+  type SessionResult,
+} from '@/lib/games';
 
 // Study session (issues #37–#43). The client-side session flow: start a session
 // via the API, render the session chrome (progress bar, Exit, Zen/timer toggle)
 // around the game, collect grades as the user plays, and on completion show the
-// results summary and fire exactly one sync (idempotent per sessionId). The
-// flashcard game is the first playable game (#38); the other games (#39–#41)
-// plug into the same chrome. Zen Mode is the default (AD-12): the session starts
-// untimed. The timer countdown (#43) is layered on top of this flow.
+// results summary and fire exactly one sync (idempotent per sessionId). All four
+// games plug into the same chrome: flashcard (#38), matching (#39), multiple
+// choice (#40), and cloze (#41). Zen Mode is the default (AD-12): the session
+// starts untimed. The timer countdown (#43) applies to the one-item-at-a-time
+// games (flashcard, MC, cloze); matching has no single "current card" to time.
 type Phase = 'loading' | 'playing' | 'results';
 
 type StartResponse = GameSession & { usuarioId: string };
@@ -40,6 +49,19 @@ export function StudySession() {
   const [nextReviews, setNextReviews] = useState<{ regraId: string; proximaRevisao: string }[]>([]);
   // Idempotency guard: ensures the sync fires exactly once per session.
   const syncedRef = useRef(false);
+
+  // Matching game state (#39): the matched pairs, the current selection, the
+  // beam/error animation targets, and the set of ever-missed pairs (for the
+  // q=1 vs q=4 grade).
+  const [matchedIds, setMatchedIds] = useState<ReadonlySet<string>>(new Set());
+  const [missedIds, setMissedIds] = useState<ReadonlySet<string>>(new Set());
+  const [selectedLeft, setSelectedLeft] = useState<MatchColumnEntry | null>(null);
+  const [selectedRight, setSelectedRight] = useState<MatchColumnEntry | null>(null);
+  const [beamPair, setBeamPair] = useState<MatchPair | null>(null);
+  const [errorPair, setErrorPair] = useState<{
+    left: MatchColumnEntry;
+    right: MatchColumnEntry;
+  } | null>(null);
 
   // Fetch the configured per-card timer seconds (AD-12) so timed mode honors
   // the user's settings (issue #43). Defaults to 30 s when the fetch fails.
@@ -100,7 +122,12 @@ export function StudySession() {
         ? session.pairs.length
         : session.items.length;
 
-  // Record a grade and advance to the next item (or finish the session).
+  // The number of completed items (for the progress bar). Matching counts
+  // matched pairs; the other games count the current index.
+  const completed = session?.type === 'matching' ? matchedIds.size : currentIndex;
+
+  // Record a grade and advance to the next item (or finish the session). Used
+  // by the one-item-at-a-time games (flashcard, MC, cloze).
   const handleGrade = useCallback(
     (regraId: string, qualidade: number) => {
       setGrades((prev) => [...prev, { regraId, qualidade }]);
@@ -113,14 +140,66 @@ export function StudySession() {
     [currentIndex, total],
   );
 
+  // Matching game: handle a concept/definition selection. When both sides are
+  // selected, check the pair: correct → beam + match; wrong → error flash +
+  // mark as missed. The session ends when every pair is matched.
+  const handleMatchSelect = useCallback(
+    (side: 'left' | 'right', entry: MatchColumnEntry) => {
+      if (session?.type !== 'matching') return;
+      const left = side === 'left' ? entry : selectedLeft;
+      const right = side === 'right' ? entry : selectedRight;
+      if (side === 'left') setSelectedLeft(entry);
+      else setSelectedRight(entry);
+      if (left === null || right === null) return;
+
+      // Both sides selected: check the pair.
+      const isCorrect = left.regraId === right.regraId;
+      if (isCorrect) {
+        // Correct pair: draw the beam, then match it.
+        const pair = session.pairs.find((p) => p.regraId === left.regraId) ?? null;
+        setBeamPair(pair);
+        setMatchedIds((prev) => new Set(prev).add(left.regraId));
+        setSelectedLeft(null);
+        setSelectedRight(null);
+        // Clear the beam after the animation (150 ms draw + 250 ms fade).
+        window.setTimeout(() => {
+          setBeamPair(null);
+        }, 400);
+      } else {
+        // Wrong pair: flash the error and mark both as missed.
+        setErrorPair({ left, right });
+        setMissedIds((prev) => new Set(prev).add(left.regraId).add(right.regraId));
+        setSelectedLeft(null);
+        setSelectedRight(null);
+        window.setTimeout(() => {
+          setErrorPair(null);
+        }, 400);
+      }
+    },
+    [session, selectedLeft, selectedRight],
+  );
+
+  // When all matching pairs are matched, finish the session: grade each pair
+  // (ever-missed → 1, never-missed → 4) and move to the results phase.
+  useEffect(() => {
+    if (session?.type !== 'matching') return;
+    if (matchedIds.size < session.pairs.length) return;
+    const results: SessionResult[] = session.pairs.map((p) => ({
+      regraId: p.regraId,
+      qualidade: missedIds.has(p.regraId) ? 1 : 4,
+    }));
+    setGrades(results);
+    setPhase('results');
+  }, [matchedIds, session, missedIds]);
+
   // Timer countdown (issue #43): in timed mode (not Zen), a per-card countdown
   // runs from the configured seconds. On expiry the current card is auto-graded
   // as Missed (q=1) and the session advances. The countdown resets whenever the
   // card changes or the user (re)enters timed mode, and is paused in Zen Mode.
+  // It applies only to the one-item-at-a-time games (matching has no single
+  // "current card" to time).
   useEffect(() => {
     if (zenMode || phase !== 'playing' || session === null) return;
-    // The per-card timer applies to the one-item-at-a-time games (flashcard now;
-    // MC and cloze later). Matching has no single "current card" to time.
     if (session.type === 'matching') return;
     const current = session.items[currentIndex];
     if (current === undefined) return;
@@ -191,11 +270,11 @@ export function StudySession() {
     return <ResultsSummary grades={grades} nextReviews={nextReviews} locale={locale} />;
   }
 
-  // Playing phase: the chrome wraps the current game item.
+  // Playing phase: the chrome wraps the current game.
   return (
     <div className="flex min-h-screen flex-col bg-bg-primary">
       <SessionChrome
-        completed={currentIndex}
+        completed={completed}
         total={total}
         zenMode={zenMode}
         timerSeconds={timerSeconds}
@@ -216,6 +295,44 @@ export function StudySession() {
                 card={current}
                 onGrade={(q) => {
                   handleGrade(current.regraId, q);
+                }}
+              />
+            ) : null;
+          })()}
+        {session.type === 'matching' && (
+          <MatchingGame
+            leftColumn={session.leftColumn}
+            rightColumn={session.rightColumn}
+            matchedIds={matchedIds}
+            onSelect={handleMatchSelect}
+            selectedLeft={selectedLeft}
+            selectedRight={selectedRight}
+            beamPair={beamPair}
+            errorPair={errorPair}
+          />
+        )}
+        {session.type === 'multiple-choice' &&
+          (() => {
+            const current = session.items[currentIndex];
+            return current !== undefined ? (
+              <MultipleChoiceGame
+                key={current.regraId}
+                item={current}
+                onAnswer={(_index, correct) => {
+                  handleGrade(current.regraId, correct ? 4 : 1);
+                }}
+              />
+            ) : null;
+          })()}
+        {session.type === 'cloze' &&
+          (() => {
+            const current = session.items[currentIndex];
+            return current !== undefined ? (
+              <ClozeGame
+                key={current.regraId}
+                item={current}
+                onAnswer={(correct) => {
+                  handleGrade(current.regraId, correct ? 4 : 1);
                 }}
               />
             ) : null;
