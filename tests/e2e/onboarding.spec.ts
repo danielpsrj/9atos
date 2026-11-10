@@ -2,10 +2,16 @@
 // DEPLOYED app on Dockhand (baseURL in playwright.config.ts). Verifies the
 // onboarding contract: with zero notebooks the onboarding screen (not an empty
 // grid) is shown, both CTAs (import / use sample data) are present, the import
-// CTA links to the Knowledge Base, "use sample data" creates a notebook and the
-// onboarding screen disappears, and the copy is localized in both locales. No
-// local server is started. The sample notebook created by the "use seed" test
-// is deleted afterwards so the deployment is left tidy.
+// CTA links to the Knowledge Base, the copy is localized in both locales, and
+// "use sample data" creates a notebook and the onboarding screen disappears. No
+// local server is started.
+//
+// Test order matters: the "use sample data" test creates a notebook and only
+// cleans up in afterAll, so it runs LAST — every "onboarding is shown" test
+// above it relies on the zero-notebook first-run state.
+//
+// The sample notebook created by the "use seed" test is deleted afterwards so
+// the deployment is left tidy.
 
 import { expect, test } from '@playwright/test';
 
@@ -28,6 +34,15 @@ test.describe('onboarding screen (first run)', () => {
 
     // The empty grid / "New Notebook" dialog are NOT shown on first run.
     await expect(page.getByRole('button', { name: 'Novo Caderno' })).toBeHidden();
+  });
+
+  test('onboarding copy is localized in en-US', async ({ page }) => {
+    await page.goto('/en-US');
+    await page.waitForLoadState('networkidle');
+
+    await expect(page.getByRole('heading', { name: 'Welcome to 9Atos' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Import data' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Use sample data' })).toBeVisible();
   });
 
   test('import CTA links to the Knowledge Base', async ({ page }) => {
@@ -60,15 +75,6 @@ test.describe('onboarding screen (first run)', () => {
     // onboarding screen disappears and the notebook grid shows the new card.
     await expect(page.getByRole('heading', { name: 'Bem-vindo ao 9Atos' })).toBeHidden();
     await expect(page.getByText(SAMPLE_NAME)).toBeVisible();
-  });
-
-  test('onboarding copy is localized in en-US', async ({ page }) => {
-    await page.goto('/en-US');
-    await page.waitForLoadState('networkidle');
-
-    await expect(page.getByRole('heading', { name: 'Welcome to 9Atos' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Import data' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Use sample data' })).toBeVisible();
   });
 });
 
