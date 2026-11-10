@@ -8,18 +8,37 @@
 // No local server is started. Created nodes are cleaned up afterwards so the
 // deployment is left tidy.
 
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type APIRequestContext } from '@playwright/test';
 
-// Unique names so the created nodes never collide with the seeded hierarchy.
-const AREA_NAME = 'Área de Teste E2E';
-const DISCIPLINA_NAME = 'Disciplina de Teste E2E';
-const TOPICO_NAME = 'Tópico de Teste E2E';
-const REGRA_PERGUNTA = 'Pergunta de teste E2E?';
+// A unique suffix so each run creates distinct nodes (a failed run that leaves
+// nodes behind never collides with the next run). The seeded hierarchy uses
+// fixed names, so these never collide with it.
+const SUFFIX = String(Date.now());
+const AREA_NAME = `Área de Teste E2E ${SUFFIX}`;
+const DISCIPLINA_NAME = `Disciplina de Teste E2E ${SUFFIX}`;
+const TOPICO_NAME = `Tópico de Teste E2E ${SUFFIX}`;
+const REGRA_PERGUNTA = `Pergunta de teste E2E ${SUFFIX}?`;
+
+// Delete any leftover test areas from a previous failed run (they carry the
+// "Teste E2E" marker). Keeps the deployment tidy.
+async function cleanupLeftoverTestAreas(request: APIRequestContext): Promise<void> {
+  const res = await request.get('/api/areas');
+  if (!res.ok()) return;
+  const areas = (await res.json()) as { id: string; nome: string }[];
+  for (const area of areas) {
+    if (area.nome.includes('Teste E2E')) {
+      await request.delete(`/api/areas/${area.id}`);
+    }
+  }
+}
 
 // The row for a node, located by its visible name. The row is the `div.group`
-// inside the node's `li`.
+// whose name span directly contains the text (not an ancestor that also
+// contains a child row with the same text).
 function nodeRow(page: Page, name: string): import('@playwright/test').Locator {
-  return page.locator('div.group').filter({ hasText: name });
+  return page.locator('div.group').filter({
+    has: page.locator('span.min-w-0').filter({ hasText: name }),
+  });
 }
 
 // Expand a node (click its "Expandir" toggle) and wait for its children.
@@ -66,26 +85,29 @@ test.describe('knowledge tree browser (#46)', () => {
   });
 
   test('full CRUD round-trip at all four levels', async ({ page, request }) => {
+    // Clean up any leftover test areas from a previous failed run.
+    await cleanupLeftoverTestAreas(request);
+
     await page.goto('/pt-BR/knowledge');
     await page.waitForLoadState('networkidle');
 
     // ── Create an area ──────────────────────────────────────────────────────
     await page.getByRole('button', { name: 'Nova área' }).click();
-    await page.getByLabel('Nome').fill(AREA_NAME);
+    await page.getByLabel('Nome', { exact: true }).fill(AREA_NAME);
     await page.getByRole('button', { name: 'Criar' }).click();
     await expect(nodeRow(page, AREA_NAME)).toBeVisible();
 
     // ── Create a disciplina under the area ──────────────────────────────────
     await expandNode(page, AREA_NAME);
     await nodeRow(page, AREA_NAME).getByRole('button', { name: 'Nova disciplina' }).click();
-    await page.getByLabel('Nome').fill(DISCIPLINA_NAME);
+    await page.getByLabel('Nome', { exact: true }).fill(DISCIPLINA_NAME);
     await page.getByRole('button', { name: 'Criar' }).click();
     await expect(nodeRow(page, DISCIPLINA_NAME)).toBeVisible();
 
     // ── Create a topico under the disciplina ────────────────────────────────
     await expandNode(page, DISCIPLINA_NAME);
     await nodeRow(page, DISCIPLINA_NAME).getByRole('button', { name: 'Novo tópico' }).click();
-    await page.getByLabel('Nome').fill(TOPICO_NAME);
+    await page.getByLabel('Nome', { exact: true }).fill(TOPICO_NAME);
     await page.getByRole('button', { name: 'Criar' }).click();
     await expect(nodeRow(page, TOPICO_NAME)).toBeVisible();
 
@@ -125,15 +147,17 @@ test.describe('knowledge tree browser (#46)', () => {
     // ── Edit the regra: change the question, add/remove/reorder distractors ─
     await nodeRow(page, REGRA_PERGUNTA).getByRole('button', { name: 'Editar' }).click();
     await page.getByLabel('Pergunta').fill('Pergunta de teste E2E (editada)?');
-    // Add a third distractor, then remove the first, then reorder.
+    // Add a third distractor, then remove the first, then reorder. The
+    // remove/move buttons are siblings of the input in the row div, so scope
+    // them to the input's parent.
     await page.getByRole('button', { name: 'Adicionar distrator' }).click();
     const threeDistractors = page.getByPlaceholder(/Distrator \d/);
     await threeDistractors.nth(2).fill('Distrator C');
     // Remove "Distrator A" (index 0).
-    await threeDistractors.nth(0).getByRole('button', { name: 'Remover distrator 1' }).click();
+    await threeDistractors.nth(0).locator('..').getByRole('button', { name: 'Remover distrator 1' }).click();
     // Now the list is ["Distrator B", "Distrator C"]. Move "Distrator C" up.
     const twoDistractors = page.getByPlaceholder(/Distrator \d/);
-    await twoDistractors.nth(1).getByRole('button', { name: 'Mover para cima' }).click();
+    await twoDistractors.nth(1).locator('..').getByRole('button', { name: 'Mover para cima' }).click();
     await page.getByRole('button', { name: 'Salvar' }).click();
     await expect(nodeRow(page, 'Pergunta de teste E2E (editada)?')).toBeVisible();
 
@@ -151,7 +175,7 @@ test.describe('knowledge tree browser (#46)', () => {
     // ── Edit the hierarchy nodes (area, disciplina, topico) ─────────────────
     // Edit the topico's name.
     await nodeRow(page, TOPICO_NAME).getByRole('button', { name: 'Editar' }).click();
-    await page.getByLabel('Nome').fill('Tópico de Teste E2E (editado)');
+    await page.getByLabel('Nome', { exact: true }).fill('Tópico de Teste E2E (editado)');
     await page.getByRole('button', { name: 'Salvar' }).click();
     await expect(nodeRow(page, 'Tópico de Teste E2E (editado)')).toBeVisible();
 
