@@ -154,10 +154,18 @@ test.describe('knowledge tree browser (#46)', () => {
     const threeDistractors = page.getByPlaceholder(/Distrator \d/);
     await threeDistractors.nth(2).fill('Distrator C');
     // Remove "Distrator A" (index 0).
-    await threeDistractors.nth(0).locator('..').getByRole('button', { name: 'Remover distrator 1' }).click();
+    await threeDistractors
+      .nth(0)
+      .locator('..')
+      .getByRole('button', { name: 'Remover distrator 1' })
+      .click();
     // Now the list is ["Distrator B", "Distrator C"]. Move "Distrator C" up.
     const twoDistractors = page.getByPlaceholder(/Distrator \d/);
-    await twoDistractors.nth(1).locator('..').getByRole('button', { name: 'Mover para cima' }).click();
+    await twoDistractors
+      .nth(1)
+      .locator('..')
+      .getByRole('button', { name: 'Mover para cima' })
+      .click();
     await page.getByRole('button', { name: 'Salvar' }).click();
     await expect(nodeRow(page, 'Pergunta de teste E2E (editada)?')).toBeVisible();
 

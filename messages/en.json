@@ -54,7 +54,23 @@
   },
   "Notebooks": {
     "title": "Notebooks",
-    "description": "Your notebooks and the notebook builder arrive in Phase 6."
+    "description": "Your notebooks and the notebook builder arrive in Phase 6.",
+    "builderTitle": "Notebook Builder",
+    "builderDescription": "Browse the knowledge tree, select rules, and add them to a notebook.",
+    "targetNotebook": "Target notebook",
+    "noNotebooks": "No notebooks yet. Create one on the Overview.",
+    "selectRules": "Select the rules to add.",
+    "alreadyInNotebook": "Already in the notebook",
+    "selectedCount": "{count} rule(s) selected",
+    "addToNotebook": "Add to notebook",
+    "adding": "Adding…",
+    "addComplete": "{count} rule(s) added to the notebook.",
+    "addError": "Could not add the rules. Please try again.",
+    "treeLoading": "Loading…",
+    "treeError": "Could not load the knowledge tree.",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "noChildren": "Empty"
   },
   "Knowledge": {
     "title": "Knowledge Base",

@@ -1,7 +1,9 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { NotebookBuilder } from '@/components/notebooks/notebook-builder';
 
-// Notebooks — placeholder. The notebook card grid with progress rings and the
-// new-notebook flow land in Phase 6 (#33–#34).
+// Notebooks (Phase 8). The notebook builder (#47) lets the user browse the
+// knowledge tree, select rules, and add them to a target notebook. The
+// selection persists across navigation via localStorage.
 export default async function NotebooksPage({
   params,
 }: Readonly<{
@@ -12,9 +14,12 @@ export default async function NotebooksPage({
   const t = await getTranslations('Notebooks');
 
   return (
-    <div>
-      <h1 className="text-2xl font-semibold text-text-primary">{t('title')}</h1>
-      <p className="mt-2 text-base text-text-secondary">{t('description')}</p>
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-text-primary">{t('title')}</h1>
+        <p className="mt-2 text-base text-text-secondary">{t('description')}</p>
+      </div>
+      <NotebookBuilder />
     </div>
   );
 }

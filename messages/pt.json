@@ -54,7 +54,23 @@
   },
   "Notebooks": {
     "title": "Cadernos",
-    "description": "Seus cadernos e o criador de cadernos chegam na Fase 6."
+    "description": "Seus cadernos e o criador de cadernos chegam na Fase 6.",
+    "builderTitle": "Criador de Cadernos",
+    "builderDescription": "Navegue pela árvore de conhecimento, selecione regras e adicione-as a um caderno.",
+    "targetNotebook": "Caderno de destino",
+    "noNotebooks": "Nenhum caderno ainda. Crie um na Visão Geral.",
+    "selectRules": "Selecione as regras a adicionar.",
+    "alreadyInNotebook": "Já está no caderno",
+    "selectedCount": "{count} regra(s) selecionada(s)",
+    "addToNotebook": "Adicionar ao caderno",
+    "adding": "Adicionando…",
+    "addComplete": "{count} regra(s) adicionada(s) ao caderno.",
+    "addError": "Não foi possível adicionar as regras. Tente novamente.",
+    "treeLoading": "Carregando…",
+    "treeError": "Não foi possível carregar a árvore de conhecimento.",
+    "expand": "Expandir",
+    "collapse": "Recolher",
+    "noChildren": "Vazio"
   },
   "Knowledge": {
     "title": "Base de Conhecimento",
