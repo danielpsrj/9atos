@@ -36,6 +36,7 @@ describe('knowledge CRUD (areas → disciplinas → topicos → regras)', () => 
   let regraId: string;
 
   beforeEach(async () => {
+    await prisma.sessaoEstudo.deleteMany();
     await prisma.progressoUsuario.deleteMany();
     await prisma.regraNoCaderno.deleteMany();
     await prisma.caderno.deleteMany();

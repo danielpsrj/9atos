@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { Link } from '@/navigation';
 import { Button } from '@/components/ui/button';
 import { ProgressRing } from '@/components/dashboard/progress-ring';
 import type { DashboardNotebook } from '@/lib/dashboard';
@@ -37,10 +38,13 @@ export function NotebookGrid({ cadernos }: Readonly<{ cadernos: DashboardNoteboo
             />
           </div>
 
-          {/* Study button pinned to the card's bottom. */}
+          {/* Study button pinned to the card's bottom: starts a flashcard
+              session for this notebook (Phase 7). */}
           <div className="mt-auto">
-            <Button className="w-full" disabled>
-              {t('study')}
+            <Button asChild className="w-full">
+              <Link href={`/study?cadernoId=${encodeURIComponent(caderno.id)}&game=flashcards`}>
+                {t('study')}
+              </Link>
             </Button>
           </div>
         </article>

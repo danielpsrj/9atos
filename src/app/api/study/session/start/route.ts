@@ -138,5 +138,9 @@ export async function POST(req: NextRequest) {
       break;
   }
 
-  return NextResponse.json(session);
+  // Include the resolved usuarioId alongside the session so the client can call
+  // the sync endpoint (which requires it) without a separate round-trip. The
+  // spread preserves the GameSession shape (type/items/...) that the route
+  // tests assert; usuarioId is an extra field the client reads for the sync.
+  return NextResponse.json({ ...session, usuarioId: usuario.id });
 }

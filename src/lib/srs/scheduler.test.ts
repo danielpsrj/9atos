@@ -32,6 +32,7 @@ describe('dueRules', () => {
   }
 
   beforeEach(async () => {
+    await prisma.sessaoEstudo.deleteMany();
     await prisma.progressoUsuario.deleteMany();
     await prisma.regraNoCaderno.deleteMany();
     await prisma.caderno.deleteMany();

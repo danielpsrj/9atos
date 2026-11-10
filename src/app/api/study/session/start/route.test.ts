@@ -40,6 +40,7 @@ describe('POST /api/study/session/start', () => {
   }
 
   beforeEach(async () => {
+    await prisma.sessaoEstudo.deleteMany();
     await prisma.progressoUsuario.deleteMany();
     await prisma.regraNoCaderno.deleteMany();
     await prisma.caderno.deleteMany();

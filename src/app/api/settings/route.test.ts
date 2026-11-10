@@ -33,6 +33,7 @@ interface Envelope {
 
 describe('GET/PATCH /api/settings', () => {
   beforeEach(async () => {
+    await prisma.sessaoEstudo.deleteMany();
     await prisma.configuracaoUsuario.deleteMany();
     await prisma.usuario.deleteMany();
     await prisma.usuario.create({ data: { nome: 'Settings Tester' } });
