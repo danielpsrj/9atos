@@ -184,8 +184,10 @@ test.describe('multiple choice game (#40)', () => {
       await expect(page.getByRole('button', { name: option })).toBeVisible();
     }
 
-    // Select the correct option: it highlights sapphire and the session advances.
+    // Select the correct option: it highlights sapphire. The feedback phase
+    // requires clicking "next" before the session advances.
     await page.getByRole('button', { name: firstItem.options[firstItem.correctIndex] }).click();
+    await page.getByRole('button', { name: 'Próxima' }).click();
     // The second question is shown (the session advanced).
     const secondItem = session.items[1];
     if (secondItem !== undefined) {
@@ -240,10 +242,12 @@ test.describe('cloze game (#41)', () => {
     const input = page.getByRole('textbox', { name: 'Preencha o espaço em branco.' });
     await expect(input).toBeVisible();
 
-    // Type the correct answer and check: it highlights sapphire and advances.
+    // Type the correct answer and check: it highlights sapphire. The feedback
+    // phase requires clicking "next" before the session advances.
     await input.fill(firstItem.answer);
     await page.getByRole('button', { name: 'Verificar' }).click();
     await expect(page.getByRole('status')).toHaveText('Correto!');
+    await page.getByRole('button', { name: 'Próxima' }).click();
     // The session advances to the next item.
     const secondItem = session.items[1];
     if (secondItem !== undefined) {
