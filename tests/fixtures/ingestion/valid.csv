@@ -1,0 +1,6 @@
+pergunta,resposta_certa,justificativa,dica,distratores,nivel_dificuldade,probabilidade
+"O que é o mandado de segurança?","Garantia constitucional que protege direito líquido e certo, não coberto por habeas corpus ou habeas data.","Art. 5º, LXXII, da CF/88.","Lembre: direito líquido e certo.","Mandado de injunção;Habeas corpus;Habeas data",2,0.8
+"Quem pode impetrar mandado de segurança?","O titular do direito líquido e certo, em seu nome próprio ou em nome de seu representado.","Art. 5º, LXXII, da CF/88.","O titular do direito.","A União;O Ministério Público;Qualquer cidadão",1,0.6
+"O que é a dignidade da pessoa humana?","Fundamento da República, previsto no Art. 1º, III, da CF/88.","Art. 1º, III, da CF/88.","É um dos fundamentos da República.","Soberania;Cidadania;Pluralismo político",3,0.9
+"Qual o princípio da separação dos poderes?","Legislativo, Executivo e Judiciário, independentes e harmônicos entre si.","Art. 2º, da CF/88.","Três poderes.","Princípio da legalidade;Princípio da moralidade;Princípio da eficiência",2,0.7
+"O que é o habeas data?","Remédio para tornar possível o conhecimento de informação de interesse pessoal e para retificar dados.","Art. 5º, LXXII, da CF/88.","Dados pessoais.","Mandado de segurança;Habeas corpus;Ação popular",1,0.5

@@ -1,0 +1,51 @@
+[
+  {
+    "pergunta": "O que é o mandado de segurança?",
+    "respostaCerta": "Garantia constitucional que protege direito líquido e certo, não coberto por habeas corpus ou habeas data.",
+    "justificativa": "Art. 5º, LXXII, da CF/88.",
+    "dica": "Lembre: direito líquido e certo.",
+    "distratores": ["Mandado de injunção", "Habeas corpus", "Habeas data"],
+    "nivelDificuldade": 2,
+    "probabilidade": 0.8
+  },
+  {
+    "pergunta": "Quem pode impetrar mandado de segurança?",
+    "respostaCerta": "O titular do direito líquido e certo, em seu nome próprio ou em nome de seu representado.",
+    "justificativa": "Art. 5º, LXXII, da CF/88.",
+    "dica": "O titular do direito.",
+    "distratores": ["A União", "O Ministério Público", "Qualquer cidadão"],
+    "nivelDificuldade": 1,
+    "probabilidade": 0.6
+  },
+  {
+    "pergunta": "O que é a dignidade da pessoa humana?",
+    "respostaCerta": "Fundamento da República, previsto no Art. 1º, III, da CF/88.",
+    "justificativa": "Art. 1º, III, da CF/88.",
+    "dica": "É um dos fundamentos da República.",
+    "distratores": ["Soberania", "Cidadania", "Pluralismo político"],
+    "nivelDificuldade": 3,
+    "probabilidade": 0.9
+  },
+  {
+    "pergunta": "Qual o princípio da separação dos poderes?",
+    "respostaCerta": "Legislativo, Executivo e Judiciário, independentes e harmônicos entre si.",
+    "justificativa": "Art. 2º, da CF/88.",
+    "dica": "Três poderes.",
+    "distratores": [
+      "Princípio da legalidade",
+      "Princípio da moralidade",
+      "Princípio da eficiência"
+    ],
+    "nivelDificuldade": 2,
+    "probabilidade": 0.7
+  },
+  {
+    "pergunta": "O que é o habeas data?",
+    "respostaCerta": "Remédio para tornar possível o conhecimento de informação de interesse pessoal e para retificar dados.",
+    "justificativa": "Art. 5º, LXXII, da CF/88.",
+    "dica": "Dados pessoais.",
+    "distratores": ["Mandado de segurança", "Habeas corpus", "Ação popular"],
+    "nivelDificuldade": 1,
+    "probabilidade": 0.5
+  }
+]

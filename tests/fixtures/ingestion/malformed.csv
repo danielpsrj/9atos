@@ -1,0 +1,7 @@
+pergunta,resposta_certa,justificativa,dica,distratores,nivel_dificuldade,probabilidade
+"Regra válida 1","Resposta válida 1.","Justificativa 1.","Dica 1.","D1;D2;D3",1,0.5
+"Regra válida 2","Resposta válida 2.","Justificativa 2.","Dica 2.","D1;D2;D3",2,0.6
+,"Resposta sem pergunta.","Justificativa.","Dica.","D1;D2;D3",1,0.5
+"Regra sem resposta","","Justificativa.","Dica.","D1;D2;D3",1,0.5
+"Regra com nível inválido","Resposta.","Justificativa.","Dica.","D1;D2;D3",9,0.5
+"Regra com probabilidade inválida","Resposta.","Justificativa.","Dica.","D1;D2;D3",1,1.5

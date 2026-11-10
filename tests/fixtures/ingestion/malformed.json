@@ -1,0 +1,34 @@
+[
+  {
+    "pergunta": "Regra válida 1",
+    "respostaCerta": "Resposta válida 1.",
+    "justificativa": "Justificativa 1.",
+    "dica": "Dica 1.",
+    "distratores": ["D1", "D2", "D3"],
+    "nivelDificuldade": 1,
+    "probabilidade": 0.5
+  },
+  {
+    "pergunta": "Regra válida 2",
+    "respostaCerta": "Resposta válida 2.",
+    "justificativa": "Justificativa 2.",
+    "dica": "Dica 2.",
+    "distratores": ["D1", "D2", "D3"],
+    "nivelDificuldade": 2,
+    "probabilidade": 0.6
+  },
+  { "respostaCerta": "Resposta sem pergunta.", "distratores": ["D1", "D2", "D3"] },
+  { "pergunta": "Regra sem resposta.", "distratores": ["D1", "D2", "D3"] },
+  {
+    "pergunta": "Regra com nível inválido",
+    "respostaCerta": "Resposta.",
+    "distratores": ["D1", "D2", "D3"],
+    "nivelDificuldade": 9
+  },
+  {
+    "pergunta": "Regra com probabilidade inválida",
+    "respostaCerta": "Resposta.",
+    "distratores": ["D1", "D2", "D3"],
+    "probabilidade": 1.5
+  }
+]
