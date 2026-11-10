@@ -13,11 +13,14 @@ import type { MultipleChoiceItem } from '@/lib/games';
 // question index and grade collection live in the StudySession parent.
 interface MultipleChoiceGameProps {
   item: MultipleChoiceItem;
-  /** Called with the selected option index and whether it was correct. */
+  /** Called with the selected option index and whether it was correct. Records
+      the grade (does not advance). */
   onAnswer: (selectedIndex: number, correct: boolean) => void;
+  /** Called when the user clicks "next" to advance to the next question. */
+  onNext: () => void;
 }
 
-export function MultipleChoiceGame({ item, onAnswer }: MultipleChoiceGameProps) {
+export function MultipleChoiceGame({ item, onAnswer, onNext }: MultipleChoiceGameProps) {
   const t = useTranslations('Session');
   const [selected, setSelected] = useState<number | null>(null);
 
@@ -71,6 +74,13 @@ export function MultipleChoiceGame({ item, onAnswer }: MultipleChoiceGameProps) 
           </span>
           <p className="text-sm text-text-secondary">{item.justificativa}</p>
         </div>
+      )}
+      {/* The "next" button appears after the answer, so the user can see the
+          feedback (correct/wrong highlight + justification) before advancing. */}
+      {answered && (
+        <Button type="button" onClick={onNext}>
+          {t('next')}
+        </Button>
       )}
     </div>
   );

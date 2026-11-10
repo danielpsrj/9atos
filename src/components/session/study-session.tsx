@@ -126,18 +126,35 @@ export function StudySession() {
   // matched pairs; the other games count the current index.
   const completed = session?.type === 'matching' ? matchedIds.size : currentIndex;
 
+  // Record a grade without advancing. Used by the MC game's feedback phase (the
+  // grade is recorded when the user answers; the advance happens when the user
+  // clicks "next").
+  const recordGrade = useCallback((regraId: string, qualidade: number) => {
+    setGrades((prev) => [...prev, { regraId, qualidade }]);
+  }, []);
+
+  // Advance to the next item (or finish the session). Used by the MC game's
+  // "next" button after the feedback phase.
+  const advance = useCallback(() => {
+    if (currentIndex + 1 >= total) {
+      setPhase('results');
+    } else {
+      setCurrentIndex((i) => i + 1);
+    }
+  }, [currentIndex, total]);
+
   // Record a grade and advance to the next item (or finish the session). Used
-  // by the one-item-at-a-time games (flashcard, MC, cloze).
+  // by the one-item-at-a-time games (flashcard, cloze) and the timer expiry.
   const handleGrade = useCallback(
     (regraId: string, qualidade: number) => {
-      setGrades((prev) => [...prev, { regraId, qualidade }]);
+      recordGrade(regraId, qualidade);
       if (currentIndex + 1 >= total) {
         setPhase('results');
       } else {
         setCurrentIndex((i) => i + 1);
       }
     },
-    [currentIndex, total],
+    [recordGrade, currentIndex, total],
   );
 
   // Matching game: handle a concept/definition selection. When both sides are
@@ -319,8 +336,9 @@ export function StudySession() {
                 key={current.regraId}
                 item={current}
                 onAnswer={(_index, correct) => {
-                  handleGrade(current.regraId, correct ? 4 : 1);
+                  recordGrade(current.regraId, correct ? 4 : 1);
                 }}
+                onNext={advance}
               />
             ) : null;
           })()}
@@ -332,8 +350,9 @@ export function StudySession() {
                 key={current.regraId}
                 item={current}
                 onAnswer={(correct) => {
-                  handleGrade(current.regraId, correct ? 4 : 1);
+                  recordGrade(current.regraId, correct ? 4 : 1);
                 }}
+                onNext={advance}
               />
             ) : null;
           })()}

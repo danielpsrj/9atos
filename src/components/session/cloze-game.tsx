@@ -13,8 +13,11 @@ import type { ClozeItem } from '@/lib/games';
 // — the current item index and grade collection live in the StudySession parent.
 interface ClozeGameProps {
   item: ClozeItem;
-  /** Called with whether the fill was correct. */
+  /** Called with whether the fill was correct. Records the grade (does not
+      advance). */
   onAnswer: (correct: boolean) => void;
+  /** Called when the user clicks "next" to advance to the next blank. */
+  onNext: () => void;
 }
 
 // Normalize a string for exact-match validation: trim, collapse internal
@@ -23,17 +26,18 @@ function normalize(s: string): string {
   return s.trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
-export function ClozeGame({ item, onAnswer }: ClozeGameProps) {
+export function ClozeGame({ item, onAnswer, onNext }: ClozeGameProps) {
   const t = useTranslations('Session');
   const [value, setValue] = useState('');
   const [checked, setChecked] = useState(false);
   const [correct, setCorrect] = useState(false);
 
-  // Split the sentence on the gap so the blank renders inline at the correct
-  // position. The gap is the masked span (e.g. "___").
-  const gapIndex = item.sentence.indexOf(item.gap);
-  const before = gapIndex >= 0 ? item.sentence.slice(0, gapIndex) : item.sentence;
-  const after = gapIndex >= 0 ? item.sentence.slice(gapIndex + item.gap.length) : '';
+  // Split the sentence on the blank ("___") so the input renders inline at the
+  // correct position. The builder replaces the masked span with "___".
+  const BLANK = '___';
+  const blankIndex = item.sentence.indexOf(BLANK);
+  const before = blankIndex >= 0 ? item.sentence.slice(0, blankIndex) : item.sentence;
+  const after = blankIndex >= 0 ? item.sentence.slice(blankIndex + BLANK.length) : '';
 
   function handleCheck() {
     const isCorrect = normalize(value) === normalize(item.answer);
@@ -74,9 +78,16 @@ export function ClozeGame({ item, onAnswer }: ClozeGameProps) {
           {t('clozeCheck')}
         </Button>
       ) : (
-        <p role="status" className={correct ? 'text-sm text-primary' : 'text-sm text-error'}>
-          {correct ? t('clozeCorrect') : t('clozeWrong', { answer: item.answer })}
-        </p>
+        <div className="flex flex-col gap-3">
+          <p role="status" className={correct ? 'text-sm text-primary' : 'text-sm text-error'}>
+            {correct ? t('clozeCorrect') : t('clozeWrong', { answer: item.answer })}
+          </p>
+          {/* The "next" button appears after the check, so the user can see the
+              feedback (correct/incorrect + answer) before advancing. */}
+          <Button type="button" onClick={onNext}>
+            {t('next')}
+          </Button>
+        </div>
       )}
     </div>
   );

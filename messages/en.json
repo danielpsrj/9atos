@@ -116,6 +116,7 @@
     "clozeCheck": "Check",
     "clozeCorrect": "Correct!",
     "clozeWrong": "Incorrect. The answer is: {answer}",
+    "next": "Next",
     "timerExpired": "Time's up.",
     "resultsTitle": "Session results",
     "resultsCorrect": "{percent}% correct",

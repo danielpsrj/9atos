@@ -116,6 +116,7 @@
     "clozeCheck": "Verificar",
     "clozeCorrect": "Correto!",
     "clozeWrong": "Incorreto. A resposta é: {answer}",
+    "next": "Próxima",
     "timerExpired": "Tempo esgotado.",
     "resultsTitle": "Resultado da sessão",
     "resultsCorrect": "{percent}% de acertos",

@@ -146,6 +146,7 @@ describe('i18n dictionaries (pt-BR / en-US)', () => {
       'Session.clozeCheck',
       'Session.clozeCorrect',
       'Session.clozeWrong',
+      'Session.next',
       'Session.timerExpired',
       'Session.resultsTitle',
       'Session.resultsCorrect',
