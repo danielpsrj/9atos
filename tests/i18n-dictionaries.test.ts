@@ -62,6 +62,7 @@ describe('i18n dictionaries (pt-BR / en-US)', () => {
       'NotFound.title',
       'NotFound.description',
       'Overview.title',
+      'Overview.loading',
       'Overview.streakDays',
       'Overview.streakAria',
       'Overview.goalProgress',

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { SessionChrome } from '@/components/session/session-chrome';
+import { SessionSkeleton } from '@/components/session/session-skeleton';
 import { FlashcardGame } from '@/components/session/flashcard-game';
 import { MatchingGame } from '@/components/session/matching-game';
 import { MultipleChoiceGame } from '@/components/session/multiple-choice-game';
@@ -266,8 +267,10 @@ export function StudySession() {
     };
   }, [phase, session, usuarioId, grades]);
 
+  // Loading (issue #49, NFR-07): a skeleton mirroring the playing-phase layout
+  // (chrome + game area) so the swap to the real session causes no layout shift.
   if (phase === 'loading') {
-    return <p className="py-16 text-center text-base text-text-secondary">{t('starting')}</p>;
+    return <SessionSkeleton />;
   }
 
   if (startError !== null || session === null) {

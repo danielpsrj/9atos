@@ -86,9 +86,7 @@ test.describe('error handling (#48)', () => {
     // The recoverable error state is shown inline (not a blank screen). Target
     // the inline <p role="alert"> specifically — the same text also appears in
     // the toast, so a bare getByText is ambiguous.
-    await expect(
-      page.getByRole('main').getByRole('alert'),
-    ).toBeVisible();
+    await expect(page.getByRole('main').getByRole('alert')).toBeVisible();
 
     // Clean up.
     await page.unroute('**/api/cadernos/*/regras');
