@@ -7,6 +7,12 @@ import createNextIntlPlugin from 'next-intl/plugin';
 // scripts and Tailwind injects inline <style> tags; the security property that
 // matters here (blocking third-party origins) is preserved because no external
 // domain appears in any directive.
+//
+// Note: `upgrade-insecure-requests` is deliberately OMITTED. The V1 deployment
+// is served over plain HTTP (http://host:3005); that directive would force the
+// browser to load every http:// subresource over https://, which fails with
+// ERR_SSL_PROTOCOL_ERROR and breaks the entire client bundle (no hydration, no
+// data loading). It is only appropriate for an HTTPS-served origin.
 const securityHeaders = [
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
@@ -25,7 +31,6 @@ const securityHeaders = [
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
-      'upgrade-insecure-requests',
     ].join('; '),
   },
 ];
