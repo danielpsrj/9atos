@@ -1,9 +1,11 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { ImportScreen } from '@/components/knowledge/import-screen';
+import { KnowledgeTree } from '@/components/knowledge/knowledge-tree';
 
-// Knowledge Base (Phase 8). The import screen (#45) lets the user upload a
-// CSV/JSON file, preview the parsed rows, and bulk-insert them under a chosen
-// Topico. The tree browser, full CRUD, and rule editor land in #46.
+// Knowledge Base (Phase 8). The tree browser (#46) renders the full hierarchy
+// (Area → Disciplina → Topico → Regra) with create/edit/delete at every level
+// and a rule editor with a distractor list editor. The import screen (#45)
+// below it lets the user upload a CSV/JSON file and bulk-insert rules.
 export default async function KnowledgeBasePage({
   params,
 }: Readonly<{
@@ -19,6 +21,7 @@ export default async function KnowledgeBasePage({
         <h1 className="text-2xl font-semibold text-text-primary">{t('title')}</h1>
         <p className="mt-2 text-base text-text-secondary">{t('description')}</p>
       </div>
+      <KnowledgeTree />
       <ImportScreen />
     </div>
   );
