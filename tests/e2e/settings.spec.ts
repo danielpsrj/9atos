@@ -39,8 +39,9 @@ test.describe('settings screen', () => {
     await page.getByRole('button', { name: 'Salvar' }).click();
 
     // The inline validation error is shown and no PATCH is sent (the form is
-    // blocked client-side), so the value is not saved.
-    await expect(page.getByRole('alert')).toHaveText(
+    // blocked client-side), so the value is not saved. Target the error by its
+    // id: getByRole('alert') would also match Next.js's empty route announcer.
+    await expect(page.locator('#timer-error')).toHaveText(
       'O tempo por cartão deve ser um inteiro entre 5 e 120.',
     );
     // The field still holds the invalid value (not reset to a saved value).
@@ -66,10 +67,12 @@ test.describe('settings screen', () => {
     await page.waitForLoadState('networkidle');
     await expect(page.getByLabel('Meta diária')).toHaveValue(TEST_GOAL);
 
-    // The dashboard goal widget reflects the new goal on the next load.
+    // The dashboard goal widget reflects the new goal on the next load. The
+    // format is "{done}/{goal} regras"; nothing has been reviewed today, so it
+    // reads "0/42 regras" (goal = 42).
     await page.goto('/pt-BR');
     await page.waitForLoadState('networkidle');
-    await expect(page.getByText('42/42 regras')).toBeVisible();
+    await expect(page.getByText('0/42 regras')).toBeVisible();
   });
 
   test('settings screen is localized in en-US', async ({ page }) => {
