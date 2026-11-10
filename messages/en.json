@@ -57,6 +57,27 @@
   },
   "Settings": {
     "title": "Settings",
-    "description": "The configurable tunables (streak, daily goal, timer, Zen Mode, session size) arrive in Phase 6."
+    "description": "Tune how 9Atos works. Changes take effect from the next session.",
+    "streakModeLabel": "Streak mode",
+    "streakModeSessoes": "By sessions",
+    "streakModeRegras": "By rules",
+    "thresholdLabel": "Offensive threshold",
+    "thresholdHint": "Consecutive correct answers to level up.",
+    "dailyGoalLabel": "Daily goal",
+    "dailyGoalHint": "Rules to review per day.",
+    "timerLabel": "Per-card timer",
+    "timerHint": "Seconds per card (5 to 120).",
+    "zenModeLabel": "Zen Mode (default)",
+    "zenModeHint": "On by default for new sessions.",
+    "sessionSizeLabel": "Session size",
+    "sessionSizeHint": "Max cards per session (5 to 50).",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Settings saved.",
+    "saveError": "Could not save. Try again.",
+    "errThreshold": "The threshold must be an integer of 1 or more.",
+    "errDailyGoal": "The daily goal must be an integer of 1 or more.",
+    "errTimer": "The per-card timer must be an integer between 5 and 120.",
+    "errSessionSize": "The session size must be an integer between 5 and 50."
   }
 }

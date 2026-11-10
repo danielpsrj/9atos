@@ -57,6 +57,27 @@
   },
   "Settings": {
     "title": "Configurações",
-    "description": "Os ajustes configuráveis (sequência, meta diária, timer, Zen Mode, tamanho da sessão) chegam na Fase 6."
+    "description": "Ajuste como o 9Atos funciona. As alterações valem a partir da próxima sessão.",
+    "streakModeLabel": "Modo de sequência",
+    "streakModeSessoes": "Por sessões",
+    "streakModeRegras": "Por regras",
+    "thresholdLabel": "Limiar da ofensiva",
+    "thresholdHint": "Acertos consecutivos para avançar de nível.",
+    "dailyGoalLabel": "Meta diária",
+    "dailyGoalHint": "Regras a revisar por dia.",
+    "timerLabel": "Tempo por cartão",
+    "timerHint": "Segundos por cartão (5 a 120).",
+    "zenModeLabel": "Zen Mode (padrão)",
+    "zenModeHint": "Ativado por padrão em novas sessões.",
+    "sessionSizeLabel": "Tamanho da sessão",
+    "sessionSizeHint": "Máximo de cartões por sessão (5 a 50).",
+    "save": "Salvar",
+    "saving": "Salvando…",
+    "saved": "Configurações salvas.",
+    "saveError": "Não foi possível salvar. Tente novamente.",
+    "errThreshold": "O limiar deve ser um inteiro maior ou igual a 1.",
+    "errDailyGoal": "A meta diária deve ser um inteiro maior ou igual a 1.",
+    "errTimer": "O tempo por cartão deve ser um inteiro entre 5 e 120.",
+    "errSessionSize": "O tamanho da sessão deve ser um inteiro entre 5 e 50."
   }
 }
