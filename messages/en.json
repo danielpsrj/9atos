@@ -11,6 +11,11 @@
   "Common": {
     "backHome": "Back to home"
   },
+  "Error": {
+    "title": "Something went wrong",
+    "description": "An unexpected error occurred while displaying this part of the app. Your data is safe — please try again.",
+    "retry": "Try again"
+  },
   "NotFound": {
     "title": "Page not found",
     "description": "The address you accessed does not exist or was moved."

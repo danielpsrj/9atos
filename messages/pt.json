@@ -11,6 +11,11 @@
   "Common": {
     "backHome": "Voltar ao início"
   },
+  "Error": {
+    "title": "Algo deu errado",
+    "description": "Ocorreu um erro inesperado ao exibir esta parte do aplicativo. Seus dados estão seguros — tente novamente.",
+    "retry": "Tentar novamente"
+  },
   "NotFound": {
     "title": "Página não encontrada",
     "description": "O endereço que você acessou não existe ou foi movido."

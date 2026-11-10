@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { toastError, toastSuccess } from '@/lib/toast';
 import {
   ChevronRight,
   ChevronDown,
@@ -204,6 +205,8 @@ export function NotebookBuilder() {
         if (res.ok) added += 1;
       }
       setAddResult(added);
+      // Confirm the success with a toast (issue #48, NFR-07) — gold accent.
+      toastSuccess(t('addComplete', { count: added }));
       // Clear the selection (the rules are now in the notebook).
       setSelected(new Set());
       // Refresh the "already in notebook" set.
@@ -213,7 +216,10 @@ export function NotebookBuilder() {
         setAlreadyInNotebook(new Set(data.regras.map((r) => r.regra.id)));
       }
     } catch {
+      // API failure: surface a toast (issue #48, NFR-07) AND keep the inline
+      // recoverable error state — the user can retry, never a blank screen.
       setAddError(t('addError'));
+      toastError(t('addError'));
     } finally {
       setAdding(false);
     }

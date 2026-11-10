@@ -288,3 +288,34 @@ h6 {
       color, background-color, border-color, text-decoration-color, fill, stroke !important;
   }
 }
+
+/* Toast severity colors (issue #48, NFR-07). Sonner renders each toast with a
+   `data-type` attribute; we key the severity accent off it. Errors use the
+   dark-red --error token; success and warning use the gold --accent token
+   (the plan's "gold for warnings/success accents"). The toast body keeps the
+   app's dark card background (--bg-secondary) so it reads as part of the UI;
+   only the border and icon carry the severity color. */
+.cn-toast {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.4) !important;
+}
+.cn-toast[data-type='error'] {
+  border-color: var(--error) !important;
+}
+.cn-toast[data-type='error'] .sonner-icon {
+  color: var(--error) !important;
+}
+.cn-toast[data-type='success'] {
+  border-color: var(--accent) !important;
+}
+.cn-toast[data-type='success'] .sonner-icon {
+  color: var(--accent) !important;
+}
+.cn-toast[data-type='warning'] {
+  border-color: var(--accent) !important;
+}
+.cn-toast[data-type='warning'] .sonner-icon {
+  color: var(--accent) !important;
+}
