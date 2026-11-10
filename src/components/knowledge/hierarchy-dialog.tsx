@@ -68,13 +68,11 @@ export function HierarchyDialog({
     setError(null);
     setSaving(true);
 
-    // The id required by the request: the parent's id when creating, the
-    // existing node's id when editing. Guarded so the template literals below
-    // only ever interpolate a defined string.
-    const id = mode === 'create' ? parentId : existingId;
-    if (id === undefined) return;
-
-    // Build the request per level and mode.
+    // Build the request per level and mode. An id is only required when it is
+    // actually used in the URL (a disciplina/topico needs its parent when
+    // created; every edit needs the existing node's id). An area creation needs
+    // no id at all. Each guard narrows the optional prop to a defined string
+    // before it is interpolated into the URL.
     let url: string;
     let method: string;
     let body: Record<string, unknown>;
@@ -84,7 +82,8 @@ export function HierarchyDialog({
         method = 'POST';
         body = { nome: nome.trim() };
       } else {
-        url = `/api/areas/${id}`;
+        if (existingId === undefined) return;
+        url = `/api/areas/${existingId}`;
         method = 'PATCH';
         body = { nome: nome.trim() };
       }
@@ -93,22 +92,26 @@ export function HierarchyDialog({
       if (iconeUrl.trim().length > 0) payload.iconeUrl = iconeUrl.trim();
       if (corHex.trim().length > 0) payload.corHex = corHex.trim();
       if (mode === 'create') {
-        url = `/api/areas/${id}/disciplinas`;
+        if (parentId === undefined) return;
+        url = `/api/areas/${parentId}/disciplinas`;
         method = 'POST';
         body = payload;
       } else {
-        url = `/api/disciplinas/${id}`;
+        if (existingId === undefined) return;
+        url = `/api/disciplinas/${existingId}`;
         method = 'PATCH';
         body = payload;
       }
     } else {
       // topico
       if (mode === 'create') {
-        url = `/api/disciplinas/${id}/topicos`;
+        if (parentId === undefined) return;
+        url = `/api/disciplinas/${parentId}/topicos`;
         method = 'POST';
         body = { nome: nome.trim() };
       } else {
-        url = `/api/topicos/${id}`;
+        if (existingId === undefined) return;
+        url = `/api/topicos/${existingId}`;
         method = 'PATCH';
         body = { nome: nome.trim() };
       }
