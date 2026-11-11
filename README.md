@@ -134,6 +134,8 @@ Two compose files are kept in sync:
 
 Both define the same two services (`web`, `db`) plus an ephemeral `db-test` service (test profile only).
 
+> **Dependency manifest ("requirements file"):** this is a Node.js project, so there is no Python `requirements.txt`. The dependency manifest is **`package.json` + `package-lock.json`**, both committed to the repo. The Docker build installs exactly the locked versions via `npm ci` from `package-lock.json`. If a local build fails with a "file not found in build context" or missing-manifest error, the clone is incomplete — run `git pull` (or re-clone) so both files are present, and confirm `.dockerignore` does not exclude them. The `Dockerfile` fails fast with a clear message if either is missing.
+
 ```bash
 # Build the production image
 docker compose build

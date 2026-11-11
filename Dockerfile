@@ -2,10 +2,24 @@
 
 # ── Stage 1: deps ────────────────────────────────────────────────────────────
 # Install dependencies with layer caching (lockfile copied before source).
+#
+# package.json + package-lock.json ARE this project's dependency manifest — the
+# Node.js equivalent of a Python "requirements file". `npm ci` installs exactly
+# the locked versions from package-lock.json. Both files are committed to the
+# repo and must be present in the build context; if either is missing the build
+# fails here with a clear, actionable message (issue #55) instead of a cryptic
+# npm error.
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN if [ ! -f package.json ] || [ ! -f package-lock.json ]; then \
+      echo "ERROR: dependency manifest missing from the build context." >&2; \
+      echo "This is a Node.js project — package.json + package-lock.json are the" >&2; \
+      echo "'requirements file' (there is no requirements.txt). Both are committed" >&2; \
+      echo "to the repo. Re-clone or 'git pull' to a complete checkout, and make" >&2; \
+      echo "sure .dockerignore does not exclude them." >&2; \
+      exit 1; \
+    fi && npm ci
 
 # ── Stage 2: build ───────────────────────────────────────────────────────────
 # Generate the Prisma client and build the Next.js standalone output.
