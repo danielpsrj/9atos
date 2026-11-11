@@ -153,3 +153,33 @@ describe('applyReview — history and purity', () => {
     expect(state.historico).toHaveLength(before.historicoLength);
   });
 });
+
+describe('applyReview — game type recording (issue #61)', () => {
+  it('records the game type on the historico entry when supplied', () => {
+    const state = stateForReps(0);
+    const next = applyReview(state, 4, NOW, 'multiple-choice');
+    expect(next.historico).toHaveLength(1);
+    expect(next.historico[0]).toEqual({
+      date: NOW.toISOString(),
+      grade: 4,
+      game: 'multiple-choice',
+    });
+  });
+
+  it('omits the game field when not supplied (backward compatible)', () => {
+    const state = stateForReps(0);
+    const next = applyReview(state, 4, NOW);
+    expect(next.historico).toHaveLength(1);
+    expect(next.historico[0]).toEqual({ date: NOW.toISOString(), grade: 4 });
+    expect(next.historico[0]).not.toHaveProperty('game');
+  });
+
+  it('does not alter the SRS schedule when a game type is supplied', () => {
+    const withGame = applyReview(stateForReps(2), 4, NOW, 'cloze');
+    const withoutGame = applyReview(stateForReps(2), 4, NOW);
+    expect(withGame.reps).toBe(withoutGame.reps);
+    expect(withGame.easeFactor).toBe(withoutGame.easeFactor);
+    expect(withGame.intervaloDias).toBe(withoutGame.intervaloDias);
+    expect(withGame.proximaRevisao).toEqual(withoutGame.proximaRevisao);
+  });
+});

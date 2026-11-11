@@ -252,6 +252,9 @@ export function StudySession() {
             usuarioId,
             sessionId,
             resultados: grades,
+            // The game type (issue #61): recorded on each historico entry so the
+            // per-game statistics can group plays by game.
+            game,
           }),
         });
         if (!res.ok) return;
@@ -265,7 +268,7 @@ export function StudySession() {
     return () => {
       cancelled = true;
     };
-  }, [phase, session, usuarioId, grades]);
+  }, [phase, session, usuarioId, grades, game]);
 
   // Loading (issue #49, NFR-07): a skeleton mirroring the playing-phase layout
   // (chrome + game area) so the swap to the real session causes no layout shift.

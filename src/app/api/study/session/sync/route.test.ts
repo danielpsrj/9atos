@@ -162,4 +162,52 @@ describe('POST /api/study/session/sync', () => {
     const body = (await res.json()) as { error: { code: string } };
     expect(body.error.code).toBe('NOT_FOUND');
   });
+
+  it('records the game type on the historico entry when supplied (issue #61)', async () => {
+    const res = await POST(
+      post({
+        usuarioId,
+        sessionId: 'sess-game',
+        resultados: [{ regraId: regra1, qualidade: 4 }],
+        game: 'multiple-choice',
+      }),
+    );
+    expect(res.status).toBe(200);
+    const progress = await prisma.progressoUsuario.findUniqueOrThrow({
+      where: { usuarioId_regraId: { usuarioId, regraId: regra1 } },
+    });
+    const historico = progress.historico as unknown as { game?: string }[];
+    expect(historico).toHaveLength(1);
+    expect(historico[0]?.game).toBe('multiple-choice');
+  });
+
+  it('omits the game field when not supplied (backward compatible)', async () => {
+    await POST(
+      post({
+        usuarioId,
+        sessionId: 'sess-nogame',
+        resultados: [{ regraId: regra1, qualidade: 4 }],
+      }),
+    );
+    const progress = await prisma.progressoUsuario.findUniqueOrThrow({
+      where: { usuarioId_regraId: { usuarioId, regraId: regra1 } },
+    });
+    const historico = progress.historico as unknown as Record<string, unknown>[];
+    expect(historico).toHaveLength(1);
+    expect(historico[0]).not.toHaveProperty('game');
+  });
+
+  it('rejects an invalid game type with a 400 VALIDATION_ERROR envelope', async () => {
+    const res = await POST(
+      post({
+        usuarioId,
+        sessionId: 'sess-badgame',
+        resultados: [{ regraId: regra1, qualidade: 4 }],
+        game: 'chess',
+      }),
+    );
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe('VALIDATION_ERROR');
+  });
 });

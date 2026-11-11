@@ -8,6 +8,10 @@ export interface HistoricoEntry {
   date: string;
   /** Response quality grade: 1 (Missed), 3 (Hard), 4 (Good), 5 (Easy). */
   grade: number;
+  /** The game type the review was played in (issue #61). Recorded so the
+   *  per-game statistics graphs can group plays by game. Absent on entries
+   *  written before the field existed. */
+  game?: string;
 }
 
 export interface SrsState {
@@ -35,12 +39,16 @@ export const EF_FLOOR = 1.3;
  *   previous interval × easeFactor; then reps += 1.
  * - Ease factor: EF + (0.1 - (5 - q) × (0.08 + (5 - q) × 0.02)), floor 1.3.
  * - proximaRevisao = now + interval days.
- * - Append {date, grade} to historico.
+ * - Append {date, grade, game?} to historico.
  *
  * The interval for reps > 1 uses the CURRENT ease factor (the spec computes the
  * interval before the ease-factor update), matching the original SM-2 ordering.
+ *
+ * `game` (issue #61) is the optional game type the review was played in; it is
+ * recorded on the historico entry so the per-game statistics can group plays by
+ * game. Omitted when the caller does not supply it (backward compatible).
  */
-export function applyReview(state: SrsState, q: number, now: Date): SrsState {
+export function applyReview(state: SrsState, q: number, now: Date, game?: string): SrsState {
   // Interval + reps (uses the current ease factor, per spec ordering).
   let reps: number;
   let intervaloDias: number;
@@ -63,7 +71,12 @@ export function applyReview(state: SrsState, q: number, now: Date): SrsState {
   const easeFactor = Math.max(EF_FLOOR, state.easeFactor + efDelta);
 
   const proximaRevisao = addDays(now, intervaloDias);
-  const historico: HistoricoEntry[] = [...state.historico, { date: now.toISOString(), grade: q }];
+  const historico: HistoricoEntry[] = [
+    ...state.historico,
+    game === undefined
+      ? { date: now.toISOString(), grade: q }
+      : { date: now.toISOString(), grade: q, game },
+  ];
 
   return { reps, easeFactor, intervaloDias, proximaRevisao, historico };
 }

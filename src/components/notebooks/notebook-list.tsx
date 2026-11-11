@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { NotebookPen, BookOpen } from 'lucide-react';
+import { Link } from '@/navigation';
+import { NotebookPen, BookOpen, BarChart3 } from 'lucide-react';
 
 // Notebook list (issue #62). Notebooks are a selection of a Knowledge's
 // contents — all of them by default, or a subselection. This list shows each
@@ -72,6 +73,14 @@ export function NotebookList() {
               <span className="shrink-0 text-xs text-text-secondary">
                 {t('ruleCount', { count: item._count.regras })}
               </span>
+              {/* Per-notebook statistics (issue #61). */}
+              <Link
+                href={`/notebooks/${encodeURIComponent(item.id)}/estatisticas`}
+                aria-label={t('statistics')}
+                className="shrink-0 rounded-md p-1.5 text-text-secondary transition-colors hover:bg-bg-primary hover:text-primary"
+              >
+                <BarChart3 aria-hidden className="size-4" />
+              </Link>
             </li>
           ))}
         </ul>

@@ -64,6 +64,14 @@ function NotebookCard({ caderno }: Readonly<{ caderno: DashboardNotebook }>) {
             {t('study')}
           </Link>
         </Button>
+        {/* Per-notebook statistics (issue #61): the learning dashboard for this
+            notebook, reachable from the card. */}
+        <Link
+          href={`/notebooks/${encodeURIComponent(caderno.id)}/estatisticas`}
+          className="text-center text-xs font-medium text-text-secondary underline-offset-2 hover:text-primary hover:underline"
+        >
+          {t('statistics')}
+        </Link>
       </div>
     </article>
   );

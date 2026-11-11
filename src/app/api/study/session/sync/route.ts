@@ -11,10 +11,14 @@ import { errorResponse, ErrorCode } from '@/lib/api/error';
 /** The four valid SRS grades (FR-04). */
 const VALID_GRADES = new Set([1, 3, 4, 5]);
 
+/** The four valid game types (issue #61 — recorded on the historico). */
+const VALID_GAMES = new Set(['flashcards', 'match', 'multiple-choice', 'cloze']);
+
 interface SyncBody {
   usuarioId?: unknown;
   sessionId?: unknown;
   resultados?: unknown;
+  game?: unknown;
 }
 
 interface Resultado {
@@ -39,7 +43,7 @@ export async function POST(req: NextRequest) {
     });
   }
   const body = raw as SyncBody;
-  const { usuarioId, sessionId, resultados } = body;
+  const { usuarioId, sessionId, resultados, game } = body;
 
   // usuarioId: required non-empty string.
   if (typeof usuarioId !== 'string' || usuarioId.length === 0) {
@@ -89,6 +93,20 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // game (issue #61): optional; when present it must be a valid game type. It
+  // is recorded on each historico entry so the per-game statistics can group
+  // plays by game. Absent (or null) → not recorded (backward compatible).
+  let gameType: string | undefined;
+  if (game !== undefined && game !== null) {
+    if (typeof game !== 'string' || !VALID_GAMES.has(game)) {
+      return errorResponse(400, {
+        code: ErrorCode.VALIDATION_ERROR,
+        message: 'game must be one of flashcards, match, multiple-choice, cloze.',
+      });
+    }
+    gameType = game;
+  }
+
   // The user must exist.
   const usuario = await prisma.usuario.findUnique({ where: { id: usuarioId } });
   if (usuario === null) {
@@ -110,8 +128,9 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Apply the batch transactionally (idempotent per sessionId).
-  const results = await syncSession(usuarioId, sessionId, batch);
+  // Apply the batch transactionally (idempotent per sessionId). The game type
+  // (issue #61) is recorded on each historico entry for the per-game statistics.
+  const results = await syncSession(usuarioId, sessionId, batch, { game: gameType });
 
   return NextResponse.json(results);
 }

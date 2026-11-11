@@ -29,6 +29,9 @@ interface StoredResult {
 export interface SyncSessionOptions {
   /** The "now" instant (UTC). Injected for testability. */
   now?: Date;
+  /** The game type the session was played in (issue #61). Recorded on each
+   *  historico entry so the per-game statistics can group plays by game. */
+  game?: string;
 }
 
 const EXAM_TIMEZONE = 'America/Sao_Paulo';
@@ -66,6 +69,7 @@ export async function syncSession(
   options: SyncSessionOptions = {},
 ): Promise<SyncResult[]> {
   const now = options.now ?? new Date();
+  const game = options.game;
 
   return prisma.$transaction(async (tx) => {
     // Idempotency: if this session was already applied, return the stored
@@ -102,7 +106,7 @@ export async function syncSession(
         proximaRevisao: progress.proximaRevisao,
         historico: progress.historico as unknown as SrsState['historico'],
       };
-      const next = applyReview(state, qualidade, now);
+      const next = applyReview(state, qualidade, now, game);
 
       await tx.progressoUsuario.update({
         where: { id: progress.id },
