@@ -25,11 +25,26 @@ export async function POST() {
     });
   }
 
-  // Idempotent: return the existing sample notebook if it is already there.
+  // Idempotent: return the existing sample notebook if it is already there. If
+  // it predates the Knowledge concept (issue #62) and has no knowledge link yet,
+  // attach it to the seeded Knowledge so the Notebook → Knowledge relationship
+  // is represented.
   const existing = await prisma.caderno.findFirst({
     where: { usuarioId: usuario.id, nome: SAMPLE_NAME },
   });
   if (existing !== null) {
+    if (existing.conhecimentoId === null) {
+      const conhecimento = await prisma.conhecimento.findFirst({
+        orderBy: { criadaEm: 'asc' },
+      });
+      if (conhecimento !== null) {
+        const linked = await prisma.caderno.update({
+          where: { id: existing.id },
+          data: { conhecimentoId: conhecimento.id },
+        });
+        return NextResponse.json(linked, { status: 200 });
+      }
+    }
     return NextResponse.json(existing, { status: 200 });
   }
 
