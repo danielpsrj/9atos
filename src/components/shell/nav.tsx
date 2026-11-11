@@ -12,22 +12,24 @@ import { useLocale, useTranslations } from 'next-intl';
 // returns the locale-less path (so active-route matching works), and
 // useRouter.replace switches locale while staying on the same page.
 import { Link, usePathname, useRouter } from '@/navigation';
-import { BookOpen, LayoutDashboard, Menu, NotebookPen, Settings, X } from 'lucide-react';
+import { BookOpen, LayoutDashboard, Menu, NotebookPen, Settings, User, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { locales } from '@/i18n';
 
 interface NavItem {
   href: string;
   /** The translation key under the "Nav" namespace. */
-  labelKey: 'overview' | 'notebooks' | 'knowledge' | 'settings';
+  labelKey: 'overview' | 'user' | 'knowledge' | 'notebooks' | 'settings';
   icon: typeof LayoutDashboard;
 }
 
-// The four persistent nav entries (spec §5.2 Screen 1).
+// The persistent nav entries, ordered per the semantic model (issue #62):
+// Overview → User → Knowledge → Notebooks → Settings.
 const NAV_ITEMS: NavItem[] = [
   { href: '/', labelKey: 'overview', icon: LayoutDashboard },
-  { href: '/notebooks', labelKey: 'notebooks', icon: NotebookPen },
+  { href: '/user', labelKey: 'user', icon: User },
   { href: '/knowledge', labelKey: 'knowledge', icon: BookOpen },
+  { href: '/notebooks', labelKey: 'notebooks', icon: NotebookPen },
   { href: '/settings', labelKey: 'settings', icon: Settings },
 ];
 

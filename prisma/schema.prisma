@@ -30,6 +30,21 @@ model Usuario {
   configuracao   ConfiguracaoUsuario?
 }
 
+// --- KNOWLEDGE (issue #62) ---
+// A "unity of knowledge": a named group of content the user wants to learn and
+// get learning statistics from. Each multi-content import creates one
+// Conhecimento, and the imported rules belong to it (Regra.conhecimentoId).
+// Notebooks (Caderno) are a selection of a Conhecimento's contents — all of
+// them by default, or a subselection.
+model Conhecimento {
+  id        String    @id @default(uuid())
+  nome      String
+  descricao String?
+  criadaEm  DateTime  @default(now())
+  regras    Regra[]
+  cadernos  Caderno[]
+}
+
 // --- KNOWLEDGE HIERARCHY ---
 
 model Area {
@@ -60,6 +75,10 @@ model Regra {
   id           String   @id @default(uuid())
   topicoId     String
   topico       Topico   @relation(fields: [topicoId], references: [id])
+  // The unity of knowledge this rule belongs to (issue #62). Optional so rules
+  // created before the Knowledge concept (or via the tree editor) keep working.
+  conhecimentoId String?
+  conhecimento   Conhecimento? @relation(fields: [conhecimentoId], references: [id])
 
   // Base Content
   pergunta        String
@@ -86,6 +105,12 @@ model Caderno {
   usuario   Usuario          @relation(fields: [usuarioId], references: [id])
   nome      String
   descricao String?
+  // The unity of knowledge this notebook selects from (issue #62). The
+  // notebook's rules (RegraNoCaderno) are a subselection of that knowledge's
+  // rules — all of them by default, or a chosen subset. Optional so notebooks
+  // created before the Knowledge concept keep working.
+  conhecimentoId String?
+  conhecimento   Conhecimento? @relation(fields: [conhecimentoId], references: [id])
   regras    RegraNoCaderno[]
 }
 

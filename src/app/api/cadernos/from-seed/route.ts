@@ -35,13 +35,16 @@ export async function POST() {
 
   // Create the notebook and link every seeded rule to it in one transaction.
   // In V1 the only rules are the seeded sample rules, so linking all of them is
-  // exactly the "use the sample data" intent.
+  // exactly the "use the sample data" intent. The notebook selects from the
+  // seeded Knowledge (issue #62) — all of its contents by default.
+  const conhecimento = await prisma.conhecimento.findFirst({ orderBy: { criadaEm: 'asc' } });
   const caderno = await prisma.$transaction(async (tx) => {
     const created = await tx.caderno.create({
       data: {
         usuarioId: usuario.id,
         nome: SAMPLE_NAME,
         descricao: SAMPLE_DESCRIPTION,
+        ...(conhecimento !== null ? { conhecimentoId: conhecimento.id } : {}),
       },
     });
     const regras = await tx.regra.findMany({ select: { id: true } });

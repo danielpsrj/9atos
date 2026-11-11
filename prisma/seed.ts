@@ -18,6 +18,14 @@ const configDefaults = {
 // Sample hierarchy — Brazilian Constitution, Fundamental Rights (spec §5.2 mockup).
 // probabilidade is deliberately varied (0.2–1.0) to exercise AD-11 weighted sampling.
 const seed = {
+  // The unity of knowledge (issue #62) that groups the sample content. Each
+  // multi-content import creates one Conhecimento; the seed creates one so the
+  // deployment represents the Knowledge → Notebook structure.
+  conhecimento: {
+    id: 'conhec-cf-direitos-fundamentais',
+    nome: 'Constituição Federal — Direitos Fundamentais',
+    descricao: 'Regras de exemplo sobre os direitos e garantias fundamentais (CF/88).',
+  },
   area: { id: 'area-direito-constitucional', nome: 'Direito Constitucional' },
   disciplinas: [
     {
@@ -315,7 +323,12 @@ async function main() {
     },
   });
 
-  // 2. Area.
+  // 2. Knowledge (unity of knowledge, issue #62) + Area.
+  await prisma.conhecimento.upsert({
+    where: { id: seed.conhecimento.id },
+    update: { nome: seed.conhecimento.nome, descricao: seed.conhecimento.descricao },
+    create: seed.conhecimento,
+  });
   await prisma.area.upsert({
     where: { id: seed.area.id },
     update: { nome: seed.area.nome },
@@ -340,7 +353,8 @@ async function main() {
     });
   }
 
-  // 5. Regras (≥15, varied probabilidade, ≥3 distratores each).
+  // 5. Regras (≥15, varied probabilidade, ≥3 distratores each). Each belongs to
+  // the sample Knowledge (issue #62).
   for (const r of seed.regras) {
     await prisma.regra.upsert({
       where: { id: r.id },
@@ -353,10 +367,12 @@ async function main() {
         nivelDificuldade: r.nivelDificuldade,
         probabilidade: r.probabilidade,
         topicoId: r.topicoId,
+        conhecimentoId: seed.conhecimento.id,
       },
       create: {
         id: r.id,
         topicoId: r.topicoId,
+        conhecimentoId: seed.conhecimento.id,
         pergunta: r.pergunta,
         respostaCerta: r.respostaCerta,
         justificativa: r.justificativa,
@@ -369,7 +385,8 @@ async function main() {
   }
 
   // Summary.
-  const [areas, disciplinas, topicos, regras, usuarios] = await Promise.all([
+  const [conhecimentos, areas, disciplinas, topicos, regras, usuarios] = await Promise.all([
+    prisma.conhecimento.count(),
     prisma.area.count(),
     prisma.disciplina.count(),
     prisma.topico.count(),
@@ -377,7 +394,7 @@ async function main() {
     prisma.usuario.count(),
   ]);
   console.log(
-    `Seed complete: ${String(usuarios)} usuario(s), ${String(areas)} area(s), ${String(disciplinas)} disciplina(s), ${String(topicos)} topico(s), ${String(regras)} regra(s).`,
+    `Seed complete: ${String(usuarios)} usuario(s), ${String(conhecimentos)} conhecimento(s), ${String(areas)} area(s), ${String(disciplinas)} disciplina(s), ${String(topicos)} topico(s), ${String(regras)} regra(s).`,
   );
   console.log(`Bootstrap user: ${usuario.nome} <${usuario.email ?? 'sem e-mail'}>`);
 }

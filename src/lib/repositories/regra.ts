@@ -10,6 +10,9 @@ export interface CreateRegraInput {
   distratores: string[];
   nivelDificuldade?: number;
   probabilidade?: number | null;
+  /** The unity of knowledge this rule belongs to (issue #62). Set by the import
+   *  flow, which creates one Conhecimento per multi-content import. */
+  conhecimentoId?: string;
 }
 
 export interface UpdateRegraInput {

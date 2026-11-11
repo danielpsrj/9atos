@@ -5,18 +5,36 @@ export interface CreateCadernoInput {
   usuarioId: string;
   nome: string;
   descricao?: string | null;
+  /** The unity of knowledge this notebook selects from (issue #62). The
+   *  notebook's rules are a subselection of that knowledge's rules. */
+  conhecimentoId?: string;
 }
 
 export interface UpdateCadernoInput {
   nome?: string;
   descricao?: string | null;
+  conhecimentoId?: string | null;
 }
 
 export type CadernoWithRegras = Caderno & { regras: (RegraNoCaderno & { regra: Regra })[] };
 
+/** A notebook with the unity of knowledge it selects from and its rule count
+ *  (issue #62 — the Notebook → Knowledge relationship). */
+export type CadernoWithKnowledge = Caderno & {
+  conhecimento: { id: string; nome: string } | null;
+  _count: { regras: number };
+};
+
 export const cadernoRepository = {
-  async list(usuarioId: string): Promise<Caderno[]> {
-    return prisma.caderno.findMany({ where: { usuarioId }, orderBy: { nome: 'asc' } });
+  async list(usuarioId: string): Promise<CadernoWithKnowledge[]> {
+    return prisma.caderno.findMany({
+      where: { usuarioId },
+      orderBy: { nome: 'asc' },
+      include: {
+        conhecimento: { select: { id: true, nome: true } },
+        _count: { select: { regras: true } },
+      },
+    });
   },
 
   async getById(id: string): Promise<Caderno | null> {

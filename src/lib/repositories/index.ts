@@ -12,3 +12,11 @@ export type { CreateRegraInput, UpdateRegraInput, ListRegrasOptions } from './re
 
 export { cadernoRepository } from './caderno';
 export type { CreateCadernoInput, UpdateCadernoInput, CadernoWithRegras } from './caderno';
+
+export { conhecimentoRepository } from './conhecimento';
+export type {
+  CreateConhecimentoInput,
+  UpdateConhecimentoInput,
+  ConhecimentoWithCount,
+  ConhecimentoWithRegras,
+} from './conhecimento';
