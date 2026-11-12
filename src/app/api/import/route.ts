@@ -1,7 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { parseFile, MAX_IMPORT_BYTES, MAX_IMPORT_ROWS } from '@/lib/ingestion/parser';
+import {
+  parseFile,
+  parseCsvWithMapping,
+  CSV_HEADER,
+  MAX_IMPORT_BYTES,
+  MAX_IMPORT_ROWS,
+  type ColumnMapping,
+  type ParseResult,
+} from '@/lib/ingestion/parser';
 import { topicoRepository, regraRepository, conhecimentoRepository } from '@/lib/repositories';
 import { errorResponse, ErrorCode } from '@/lib/api/error';
+
+function isColumnMapping(value: unknown): value is ColumnMapping {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  return CSV_HEADER.every((field) => typeof record[field] === 'number');
+}
 
 // ── POST /api/import ─────────────────────────────────────────────────────────
 // Confirms an import: parses the uploaded knowledge-base file and bulk-inserts
@@ -35,6 +49,7 @@ export async function POST(req: NextRequest) {
     format?: unknown;
     topicoId?: unknown;
     conhecimentoNome?: unknown;
+    columnMapping?: unknown;
   };
 
   if (typeof body.content !== 'string' || body.content.length === 0) {
@@ -76,7 +91,13 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const result = parseFile(body.content, body.format);
+  // CSV header flexibility (issue #64): parse with the supplied column mapping
+  // when present; otherwise the exact binding header is required.
+  const mapping = isColumnMapping(body.columnMapping) ? body.columnMapping : null;
+  const result: ParseResult =
+    body.format === 'csv' && mapping !== null
+      ? parseCsvWithMapping(body.content, mapping)
+      : parseFile(body.content, body.format);
 
   // Import limit: max row count (plan §2.4). Checked after parsing.
   if (result.rowCount > MAX_IMPORT_ROWS) {

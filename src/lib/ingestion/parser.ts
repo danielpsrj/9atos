@@ -25,6 +25,102 @@ export const CSV_HEADER = [
 
 export type CsvHeader = (typeof CSV_HEADER)[number];
 
+/** A column mapping (issue #64): which source column (0-based index) holds each
+ *  target field. A value of -1 means the field is not present in the file
+ *  (optional fields default; a missing required field rejects every row). */
+export type ColumnMapping = Record<CsvHeader, number>;
+
+/** The identity mapping: the source columns are in the binding header order. */
+export const IDENTITY_MAPPING: ColumnMapping = {
+  pergunta: 0,
+  resposta_certa: 1,
+  justificativa: 2,
+  dica: 3,
+  distratores: 4,
+  nivel_dificuldade: 5,
+  probabilidade: 6,
+};
+
+/** Recognized header aliases (issue #64): common English/Portuguese names that
+ *  map to a binding field. Matching is case-insensitive and ignores spaces,
+ *  underscores, and hyphens, so "Resposta Certa", "resposta_certa", and
+ *  "resposta-certa" all match. */
+const HEADER_ALIASES: Record<CsvHeader, string[]> = {
+  pergunta: ['pergunta', 'question', 'q', 'prompt', 'enunciado'],
+  resposta_certa: [
+    'resposta_certa',
+    'resposta',
+    'respostacerta',
+    'answer',
+    'answer_certa',
+    'correct_answer',
+    'resposta_correta',
+    'resposta_certa',
+  ],
+  justificativa: ['justificativa', 'justification', 'explanation', 'explicacao', 'explicação'],
+  dica: ['dica', 'hint', 'tip', 'pista'],
+  distratores: ['distratores', 'distractors', 'alternativas', 'options', 'opcoes', 'opções'],
+  nivel_dificuldade: [
+    'nivel_dificuldade',
+    'nivel',
+    'dificuldade',
+    'difficulty',
+    'difficulty_level',
+    'nivel_de_dificuldade',
+  ],
+  probabilidade: ['probabilidade', 'probability', 'chance', 'weight', 'peso'],
+};
+
+/** Normalize a header cell for alias matching: lowercase and strip spaces,
+ *  underscores, and hyphens. */
+function normalizeHeader(cell: string): string {
+  return cell.toLowerCase().replace(/[\s_-]/g, '');
+}
+
+/** Build the normalized-alias → field lookup (computed once). */
+const ALIAS_LOOKUP: [string, CsvHeader][] = (
+  Object.entries(HEADER_ALIASES) as [CsvHeader, string[]][]
+).flatMap(([field, aliases]) =>
+  aliases.map((a) => [normalizeHeader(a), field] as [string, CsvHeader]),
+);
+
+/** Auto-map a CSV header to the binding fields (issue #64). Returns a
+ *  ColumnMapping when every required field (pergunta, resposta_certa) can be
+ *  resolved, or null when a required field is missing (the UI then asks the
+ *  user to map it manually). */
+export function autoMapColumns(header: readonly string[]): ColumnMapping | null {
+  const mapping: ColumnMapping = {
+    pergunta: -1,
+    resposta_certa: -1,
+    justificativa: -1,
+    dica: -1,
+    distratores: -1,
+    nivel_dificuldade: -1,
+    probabilidade: -1,
+  };
+  const used = new Set<number>();
+  header.forEach((cell, index) => {
+    const normalized = normalizeHeader(cell);
+    const match = ALIAS_LOOKUP.find(([alias]) => alias === normalized);
+    if (match === undefined) return;
+    const [, field] = match;
+    // First column wins for a field; skip already-mapped columns.
+    if (mapping[field] !== -1 || used.has(index)) return;
+    mapping[field] = index;
+    used.add(index);
+  });
+  if (mapping.pergunta === -1 || mapping.resposta_certa === -1) return null;
+  return mapping;
+}
+
+/** Extract the CSV header row (the first row, BOM-stripped and trimmed). */
+export function detectCsvHeader(text: string): string[] {
+  const rows = parseCsvRows(text);
+  const first = rows[0];
+  if (first === undefined) return [];
+  return first.map((h) => h.replace(/^\uFEFF/, '').trim());
+}
+
 /** A parsed Regra (the mapped fields, ready for bulk insert). */
 export interface ParsedRegra {
   pergunta: string;
@@ -224,6 +320,49 @@ export function parseCsv(text: string): ParseResult {
     rowCount += 1;
     const line = i + 1; // 1-based line number (header is line 1).
     const mapped = mapCsvRow(row, line);
+    if ('message' in mapped) {
+      errors.push(mapped);
+    } else {
+      regras.push(mapped);
+    }
+  }
+
+  return { regras, errors, warnings: topicShortageWarnings(regras.length), rowCount };
+}
+
+/** Parse a CSV knowledge-base file using an explicit column mapping (issue
+ *  #64). The header row is skipped; each data row's fields are reordered into
+ *  the binding header order using the mapping before validation. A mapped
+ *  column of -1 (field absent) yields an empty value for that field. */
+export function parseCsvWithMapping(text: string, mapping: ColumnMapping): ParseResult {
+  const rows = parseCsvRows(text);
+  const errors: LineError[] = [];
+  const regras: ParsedRegra[] = [];
+
+  if (rows.length === 0) {
+    return {
+      regras,
+      errors: [{ line: 1, message: 'File is empty.' }],
+      warnings: [],
+      rowCount: 0,
+    };
+  }
+
+  let rowCount = 0;
+  for (let i = 1; i < rows.length; i += 1) {
+    const row = rows[i];
+    if (row === undefined) continue;
+    if (row.every((f) => f.trim().length === 0)) continue;
+    rowCount += 1;
+    const line = i + 1; // 1-based line number (header is line 1).
+    // Reorder the source fields into binding-header order via the mapping.
+    const ordered: string[] = CSV_HEADER.map((field) => {
+      const index = mapping[field];
+      if (index === -1) return '';
+      const value = row[index];
+      return value ?? '';
+    });
+    const mapped = mapCsvRow(ordered, line);
     if ('message' in mapped) {
       errors.push(mapped);
     } else {

@@ -2,9 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Upload, FileWarning, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Upload, FileWarning, CheckCircle2, AlertTriangle, Columns3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { ParsedRegra, LineError } from '@/lib/ingestion/parser';
+import {
+  type ParsedRegra,
+  type LineError,
+  type ColumnMapping,
+  CSV_HEADER,
+} from '@/lib/ingestion/parser';
 
 // Import screen (issue #45, FR-13, plan §2.4). The user-facing import flow:
 // upload a CSV/JSON file, preview the parsed rows (flagging rejected rows with
@@ -18,6 +23,22 @@ interface PreviewResult {
   errors: LineError[];
   warnings: string[];
   rowCount: number;
+}
+
+// The preview response when a CSV's header is not the exact binding schema and
+// no column mapping was supplied (issue #64): the UI shows a mapping dialog.
+interface NeedsMappingResult {
+  needsMapping: true;
+  headerColumns: string[];
+  suggestedMapping: ColumnMapping | null;
+}
+
+// Type guard for the preview response union. `PreviewResult` is an open
+// interface, so an inline `in` check does not narrow the union; this guard
+// does. `needsMapping` is declared only on `NeedsMappingResult`, so its
+// presence discriminates the two.
+function isNeedsMapping(data: PreviewResult | NeedsMappingResult): data is NeedsMappingResult {
+  return 'needsMapping' in data;
 }
 
 interface ImportResult {
@@ -49,6 +70,13 @@ export function ImportScreen() {
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [parsing, setParsing] = useState(false);
 
+  // Column mapping (issue #64): when a CSV's header is not the exact binding
+  // schema, the preview returns needsMapping with the header columns and a
+  // suggested mapping. The user adjusts the mapping in a dialog, then the
+  // preview is re-requested with the confirmed mapping.
+  const [headerColumns, setHeaderColumns] = useState<string[] | null>(null);
+  const [columnMapping, setColumnMapping] = useState<ColumnMapping | null>(null);
+
   const [topicos, setTopicos] = useState<TopicoOption[]>([]);
   const [topicoId, setTopicoId] = useState('');
 
@@ -78,6 +106,59 @@ export function ImportScreen() {
     };
   }, []);
 
+  // Request the preview for the current content. When a column mapping is
+  // supplied (issue #64) it is sent so the server parses with it. A CSV whose
+  // header is not the exact binding schema returns needsMapping instead of a
+  // preview, which opens the column-mapping dialog.
+  const requestPreview = useCallback(
+    async (text: string, fmt: 'csv' | 'json', mapping: ColumnMapping | null) => {
+      setParsing(true);
+      setPreviewError(null);
+      try {
+        const res = await fetch('/api/import/preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: text,
+            format: fmt,
+            ...(mapping ? { columnMapping: mapping } : {}),
+          }),
+        });
+        if (!res.ok) {
+          const body = (await res.json().catch(() => null)) as {
+            error?: { message?: string };
+          } | null;
+          setPreviewError(body?.error?.message ?? t('previewError'));
+          return;
+        }
+        const data = (await res.json()) as PreviewResult | NeedsMappingResult;
+        if (isNeedsMapping(data)) {
+          setHeaderColumns(data.headerColumns);
+          // Pre-fill with the suggested mapping, or an all-ignore mapping.
+          setColumnMapping(
+            data.suggestedMapping ?? {
+              pergunta: -1,
+              resposta_certa: -1,
+              justificativa: -1,
+              dica: -1,
+              distratores: -1,
+              nivel_dificuldade: -1,
+              probabilidade: -1,
+            },
+          );
+          setPreview(null);
+        } else {
+          setPreview(data);
+        }
+      } catch {
+        setPreviewError(t('previewError'));
+      } finally {
+        setParsing(false);
+      }
+    },
+    [t],
+  );
+
   // Read the selected file, check its size, and request the preview.
   const handleFileChange = useCallback(
     async (file: File) => {
@@ -85,6 +166,8 @@ export function ImportScreen() {
       setImportResult(null);
       setImportError(null);
       setPreview(null);
+      setHeaderColumns(null);
+      setColumnMapping(null);
       setFileName(file.name);
 
       // Import limit: max file size (plan §2.4). Checked before sending.
@@ -99,31 +182,22 @@ export function ImportScreen() {
 
       const text = await file.text();
       setContent(text);
-      setParsing(true);
-      try {
-        const res = await fetch('/api/import/preview', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: text, format: detectedFormat }),
-        });
-        if (!res.ok) {
-          const body = (await res.json().catch(() => null)) as {
-            error?: { message?: string };
-          } | null;
-          setPreviewError(body?.error?.message ?? t('previewError'));
-          return;
-        }
-        setPreview((await res.json()) as PreviewResult);
-      } catch {
-        setPreviewError(t('previewError'));
-      } finally {
-        setParsing(false);
-      }
+      await requestPreview(text, detectedFormat, null);
     },
-    [t],
+    [requestPreview, t],
   );
 
+  // Confirm the column mapping (issue #64): re-request the preview with the
+  // user-adjusted mapping so the rows are parsed against it.
+  const confirmMapping = useCallback(async () => {
+    if (content === null || columnMapping === null) return;
+    setHeaderColumns(null);
+    await requestPreview(content, format, columnMapping);
+  }, [content, columnMapping, format, requestPreview]);
+
   // Confirm the import: bulk-insert the valid rows under the chosen topico.
+  // The column mapping (issue #64) is sent when present so the server parses
+  // the CSV with it.
   const handleConfirm = useCallback(async () => {
     if (content === null || topicoId === '') return;
     setImporting(true);
@@ -133,7 +207,12 @@ export function ImportScreen() {
       const res = await fetch('/api/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content, format, topicoId }),
+        body: JSON.stringify({
+          content,
+          format,
+          topicoId,
+          ...(columnMapping !== null ? { columnMapping } : {}),
+        }),
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as {
@@ -148,7 +227,7 @@ export function ImportScreen() {
     } finally {
       setImporting(false);
     }
-  }, [content, format, topicoId, t]);
+  }, [content, format, topicoId, columnMapping, t]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -182,6 +261,77 @@ export function ImportScreen() {
         )}
         {parsing && <p className="text-sm text-text-secondary">{t('previewLoading')}</p>}
       </section>
+
+      {/* Step 1b: column mapping (issue #64). Shown when a CSV's header is not
+          the exact binding schema. The user assigns each source column to a
+          target field (or ignores it); the required fields (pergunta,
+          resposta_certa) must be mapped before the preview can be requested. */}
+      {headerColumns !== null && columnMapping !== null && (
+        <section className="flex flex-col gap-3 rounded-xl bg-bg-secondary p-5 ring-1 ring-foreground/10">
+          <h2 className="flex items-center gap-2 text-base font-semibold text-text-primary">
+            <Columns3 aria-hidden className="size-4" />
+            {t('mappingTitle')}
+          </h2>
+          <p className="text-sm text-text-secondary">{t('mappingHint')}</p>
+          <div className="flex flex-col gap-2">
+            {headerColumns.map((column, index) => {
+              // The field currently mapped to this column (or none).
+              const mappedField = CSV_HEADER.find((f) => columnMapping[f] === index);
+              return (
+                <label
+                  key={`${column}-${String(index)}`}
+                  className="flex items-center gap-3 text-sm text-text-secondary"
+                >
+                  <span className="w-40 shrink-0 truncate" title={column}>
+                    {column}
+                  </span>
+                  <select
+                    value={mappedField ?? 'ignore'}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setColumnMapping((prev) => {
+                        if (prev === null) return prev;
+                        const next: ColumnMapping = { ...prev };
+                        // Unmap any field currently pointing at this column.
+                        for (const field of CSV_HEADER) {
+                          if (next[field] === index) next[field] = -1;
+                        }
+                        if (value !== 'ignore') next[value as (typeof CSV_HEADER)[number]] = index;
+                        return next;
+                      });
+                    }}
+                    className="h-9 flex-1 rounded-md border border-border bg-bg-primary px-3 text-sm text-text-primary focus-visible:outline-none"
+                  >
+                    <option value="ignore">{t('mappingIgnore')}</option>
+                    {CSV_HEADER.map((field) => (
+                      <option key={field} value={field}>
+                        {t(`mappingField_${field}`)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              );
+            })}
+          </div>
+          <div className="flex justify-end gap-2 border-t border-border pt-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setHeaderColumns(null);
+                setColumnMapping(null);
+              }}
+            >
+              {t('mappingCancel')}
+            </Button>
+            <Button
+              onClick={() => void confirmMapping()}
+              disabled={columnMapping.pergunta === -1 || columnMapping.resposta_certa === -1}
+            >
+              {t('mappingConfirm')}
+            </Button>
+          </div>
+        </section>
+      )}
 
       {/* Step 2: preview (shown once the file is parsed). */}
       {preview !== null && (

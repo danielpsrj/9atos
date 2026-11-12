@@ -222,7 +222,19 @@
     "importing": "Importing…",
     "importError": "Could not import the rules. Please try again.",
     "importComplete": "{count} rule(s) imported",
-    "skippedRows": "{count} rejected row(s) were not imported."
+    "skippedRows": "{count} rejected row(s) were not imported.",
+    "mappingTitle": "Map columns",
+    "mappingHint": "This file's header doesn't match the expected format. Assign each column to a field (or ignore it). Question and Answer are required.",
+    "mappingIgnore": "— Ignore —",
+    "mappingCancel": "Cancel",
+    "mappingConfirm": "Continue",
+    "mappingField_pergunta": "Question (pergunta)",
+    "mappingField_resposta_certa": "Correct answer (resposta_certa)",
+    "mappingField_justificativa": "Justification (justificativa)",
+    "mappingField_dica": "Hint (dica)",
+    "mappingField_distratores": "Distractors (distratores)",
+    "mappingField_nivel_dificuldade": "Difficulty (nivel_dificuldade)",
+    "mappingField_probabilidade": "Probability (probabilidade)"
   },
   "Settings": {
     "title": "Settings",

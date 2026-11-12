@@ -222,7 +222,19 @@
     "importing": "Importando…",
     "importError": "Não foi possível importar as regras. Tente novamente.",
     "importComplete": "{count} regra(s) importada(s)",
-    "skippedRows": "{count} linha(s) rejeitada(s) não foram importada(s)."
+    "skippedRows": "{count} linha(s) rejeitada(s) não foram importada(s).",
+    "mappingTitle": "Mapear colunas",
+    "mappingHint": "O cabeçalho deste arquivo não corresponde ao formato esperado. Atribua cada coluna a um campo (ou ignore-a). Pergunta e Resposta são obrigatórios.",
+    "mappingIgnore": "— Ignorar —",
+    "mappingCancel": "Cancelar",
+    "mappingConfirm": "Continuar",
+    "mappingField_pergunta": "Pergunta (pergunta)",
+    "mappingField_resposta_certa": "Resposta certa (resposta_certa)",
+    "mappingField_justificativa": "Justificativa (justificativa)",
+    "mappingField_dica": "Dica (dica)",
+    "mappingField_distratores": "Distratores (distratores)",
+    "mappingField_nivel_dificuldade": "Dificuldade (nivel_dificuldade)",
+    "mappingField_probabilidade": "Probabilidade (probabilidade)"
   },
   "Settings": {
     "title": "Configurações",

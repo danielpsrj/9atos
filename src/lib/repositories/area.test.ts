@@ -54,7 +54,7 @@ describe('areaRepository', () => {
     expect(withKids?.disciplinas[0]?.nome).toBe('Child');
   });
 
-  it('deleteCascade removes the area, its subtree, and the regras\' study progress (#63)', async () => {
+  it("deleteCascade removes the area, its subtree, and the regras' study progress (#63)", async () => {
     const area = await areaRepository.create({ nome: 'CascadeArea' });
     const disciplina = await prisma.disciplina.create({
       data: { nome: 'CascadeDisc', areaId: area.id },

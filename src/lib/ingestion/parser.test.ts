@@ -1,7 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { parseCsv, parseJson, parseFile, CSV_HEADER, MIN_RULES_PER_TOPIC } from './parser';
+import {
+  parseCsv,
+  parseJson,
+  parseFile,
+  parseCsvWithMapping,
+  autoMapColumns,
+  detectCsvHeader,
+  CSV_HEADER,
+  IDENTITY_MAPPING,
+  MIN_RULES_PER_TOPIC,
+} from './parser';
 
 // The committed fixture files (valid + malformed), per the issue's acceptance
 // criteria. Paths are relative to the repo root (the vitest cwd).
@@ -224,5 +234,103 @@ describe('parseFile dispatch', () => {
   it('dispatches json to parseJson', () => {
     const result = parseFile(fixture('valid.json'), 'json');
     expect(result.regras).toHaveLength(5);
+  });
+});
+
+describe('column mapping (issue #64)', () => {
+  it('autoMapColumns resolves the exact binding header to the identity mapping', () => {
+    const mapping = autoMapColumns(CSV_HEADER);
+    expect(mapping).toEqual(IDENTITY_MAPPING);
+  });
+
+  it('autoMapColumns resolves English/Portuguese aliases (case- and separator-insensitive)', () => {
+    const mapping = autoMapColumns([
+      'Question',
+      'Correct Answer',
+      'Explanation',
+      'Hint',
+      'Distractors',
+      'Difficulty',
+      'Probability',
+    ]);
+    expect(mapping).not.toBeNull();
+    if (mapping === null) return;
+    expect(mapping.pergunta).toBe(0);
+    expect(mapping.resposta_certa).toBe(1);
+    expect(mapping.justificativa).toBe(2);
+    expect(mapping.dica).toBe(3);
+    expect(mapping.distratores).toBe(4);
+    expect(mapping.nivel_dificuldade).toBe(5);
+    expect(mapping.probabilidade).toBe(6);
+  });
+
+  it('autoMapColumns returns null when a required field is missing', () => {
+    // No column maps to resposta_certa.
+    expect(autoMapColumns(['question', 'why', 'hint'])).toBeNull();
+    // No column maps to pergunta.
+    expect(autoMapColumns(['answer', 'why', 'hint'])).toBeNull();
+  });
+
+  it('autoMapColumns leaves optional fields at -1 when absent', () => {
+    const mapping = autoMapColumns(['question', 'answer']);
+    expect(mapping).not.toBeNull();
+    if (mapping === null) return;
+    expect(mapping.pergunta).toBe(0);
+    expect(mapping.resposta_certa).toBe(1);
+    expect(mapping.justificativa).toBe(-1);
+    expect(mapping.dica).toBe(-1);
+    expect(mapping.distratores).toBe(-1);
+    expect(mapping.nivel_dificuldade).toBe(-1);
+    expect(mapping.probabilidade).toBe(-1);
+  });
+
+  it('detectCsvHeader extracts and trims the first row (BOM-stripped)', () => {
+    const csv = '\uFEFFQuestion, Answer ,Hint\n"Q1","R1.","H."';
+    const header = detectCsvHeader(csv);
+    expect(header).toEqual(['Question', 'Answer', 'Hint']);
+  });
+
+  it('parseCsvWithMapping reorders columns into binding order and parses them', () => {
+    // Source columns are in a different order: answer, question, hint.
+    const csv = 'answer,question,hint\n"R1.","Q1?","H1."\n"R2.","Q2?","H2."';
+    const mapping = autoMapColumns(['answer', 'question', 'hint']);
+    expect(mapping).not.toBeNull();
+    if (mapping === null) return;
+    const result = parseCsvWithMapping(csv, mapping);
+    expect(result.errors).toHaveLength(0);
+    expect(result.regras).toHaveLength(2);
+    const first = head(result.regras);
+    expect(first.pergunta).toBe('Q1?');
+    expect(first.respostaCerta).toBe('R1.');
+    expect(first.dica).toBe('H1.');
+  });
+
+  it('parseCsvWithMapping defaults an absent mapped field (-1) to empty', () => {
+    // Only question and answer are present; the rest map to -1.
+    const csv = 'question,answer\n"Q1?","R1."\n"Q2?","R2."';
+    const mapping = autoMapColumns(['question', 'answer']);
+    expect(mapping).not.toBeNull();
+    if (mapping === null) return;
+    const result = parseCsvWithMapping(csv, mapping);
+    expect(result.errors).toHaveLength(0);
+    const first = head(result.regras);
+    expect(first.pergunta).toBe('Q1?');
+    expect(first.respostaCerta).toBe('R1.');
+    expect(first.justificativa).toBeNull();
+    expect(first.dica).toBeNull();
+    expect(first.distratores).toEqual([]);
+  });
+
+  it('parseCsvWithMapping still rejects rows missing a required mapped field', () => {
+    // The answer column is empty on the first data row.
+    const csv = 'question,answer\n"Q1?",""\n"Q2?","R2."';
+    const mapping = autoMapColumns(['question', 'answer']);
+    expect(mapping).not.toBeNull();
+    if (mapping === null) return;
+    const result = parseCsvWithMapping(csv, mapping);
+    expect(result.regras).toHaveLength(1);
+    expect(result.errors).toHaveLength(1);
+    expect(head(result.errors).line).toBe(2);
+    expect(head(result.errors).message).toContain('resposta_certa is required');
   });
 });
