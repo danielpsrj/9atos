@@ -16,6 +16,9 @@
 /playwright-report/
 /playwright/.cache/
 
+# local QA-play artifacts (issue #65): throwaway Playwright scripts + screenshots
+/qa-evidence/
+
 # next.js
 /.next/
 /out/

@@ -99,7 +99,18 @@ const eslintConfig = [
     rules: { 'local/no-hardcoded-strings': 'off' },
   },
   {
-    ignores: ['node_modules/**', '.next/**', 'out/**', 'build/**', 'coverage/**', 'next-env.d.ts'],
+    ignores: [
+      'node_modules/**',
+      '.next/**',
+      'out/**',
+      'build/**',
+      'coverage/**',
+      'next-env.d.ts',
+      // Local QA-play artifacts (issue #65): throwaway Playwright scripts and
+      // screenshots, not app code. Excluded from linting so they don't break the
+      // build (their .mjs files are outside the tsconfig project).
+      'qa-evidence/**',
+    ],
   },
 ];
 

@@ -50,44 +50,69 @@ describe('longestWordSpan', () => {
 });
 
 describe('buildClozeSession', () => {
-  it('masks the longest span and keeps the rest of the sentence', () => {
+  it('single-word answer → the question is the context, the answer is the blank (issue #68)', () => {
     const session = buildClozeSession(
-      [rule({ respostaCerta: 'A dignidade da pessoa humana. É um fundamento.' })],
+      [rule({ pergunta: 'A capital do Brasil é', respostaCerta: 'Brasília' })],
       's',
     );
     const item = session.items[0];
     expect(item).toBeDefined();
     if (item) {
-      expect(item.gap).toBe('A dignidade da pessoa humana');
-      expect(item.sentence).toBe('___ É um fundamento.');
-      expect(item.answer).toBe('A dignidade da pessoa humana. É um fundamento.');
+      expect(item.gap).toBe('Brasília');
+      expect(item.sentence).toBe('A capital do Brasil é ___');
+      expect(item.answer).toBe('Brasília');
     }
   });
 
-  it('single-word answer → single-token gap, sentence is just the blank', () => {
-    const session = buildClozeSession([rule({ respostaCerta: 'Democracia' })], 's');
+  it('multi-word answer → the whole answer is masked, the question is the context', () => {
+    const session = buildClozeSession(
+      [
+        rule({
+          pergunta: 'Quem escreveu Dom Casmurro?',
+          respostaCerta: 'Machado de Assis',
+        }),
+      ],
+      's',
+    );
     const item = session.items[0];
     if (item) {
-      expect(item.gap).toBe('Democracia');
-      expect(item.sentence).toBe('___');
+      expect(item.gap).toBe('Machado de Assis');
+      expect(item.sentence).toBe('Quem escreveu Dom Casmurro? ___');
+      expect(item.answer).toBe('Machado de Assis');
     }
   });
 
-  it('the gap is always inside the answer text (never outside)', () => {
-    const answer = 'A dignidade da pessoa humana. É um fundamento.';
-    const session = buildClozeSession([rule({ respostaCerta: answer })], 's');
+  it('the sentence always has surrounding context (never just the blank) when the question is present', () => {
+    const session = buildClozeSession(
+      [rule({ pergunta: 'Qual é o fundamento?', respostaCerta: 'Democracia' })],
+      's',
+    );
     const item = session.items[0];
     if (item) {
-      // The gap must be a substring of the answer (never masks outside it).
-      expect(answer.includes(item.gap)).toBe(true);
-      // The sentence is the answer with the gap region blanked out.
+      // The sentence must contain the question as context, not be just "___".
+      expect(item.sentence).not.toBe('___');
+      expect(item.sentence).toContain('Qual é o fundamento?');
       expect(item.sentence).toContain('___');
+      // The gap (the answer) is not left visible in the sentence.
       expect(item.sentence).not.toContain(item.gap);
     }
   });
 
-  it('is deterministic: same rule → same gap', () => {
-    const r = rule({ respostaCerta: 'A dignidade da pessoa humana. É um fundamento.' });
+  it('masks the appended answer even when the question contains it (lastIndexOf)', () => {
+    const session = buildClozeSession(
+      [rule({ pergunta: 'Brasília é a capital', respostaCerta: 'Brasília' })],
+      's',
+    );
+    const item = session.items[0];
+    if (item) {
+      // The appended answer (at the end) is masked, not the one inside the question.
+      expect(item.sentence).toBe('Brasília é a capital ___');
+      expect(item.gap).toBe('Brasília');
+    }
+  });
+
+  it('is deterministic: same rule → same sentence and gap', () => {
+    const r = rule({ pergunta: 'Quem escreveu Dom Casmurro?', respostaCerta: 'Machado de Assis' });
     const s1 = buildClozeSession([r], 'a');
     const s2 = buildClozeSession([r], 'b');
     expect(s1.items[0]?.gap).toBe(s2.items[0]?.gap);

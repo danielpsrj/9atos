@@ -1,9 +1,10 @@
 import type { ClozeItem, ClozeSession, GameRule } from './types';
 
-// Plan §2.4 / spec §1, AD-04: cloze builder. The gap is the longest contiguous
-// word span of respostaCerta — a maximal run of consecutive words (a phrase).
-// Deterministic, no LLM. The sentence is the answer with that span replaced by a
-// blank; the exact answer is stored for validation (case/whitespace-insensitive).
+// Plan §2.4 / spec §1, AD-04: cloze builder. The sentence is composed from the
+// rule's pergunta (question) and respostaCerta (answer) so there is always
+// surrounding context (issue #68). The gap is the answer, masked as a blank at
+// the end of the composed sentence. Deterministic, no LLM. The exact answer is
+// stored for validation (case/whitespace-insensitive).
 
 const BLANK = '___';
 
@@ -54,19 +55,29 @@ export function longestWordSpan(text: string): WordSpan {
 }
 
 /**
- * Build a cloze session. For each rule, the longest contiguous word span of
- * respostaCerta is masked as the gap. Single-word answers yield a single-token
- * gap. Deterministic: the same rule always produces the same gap.
+ * Build a cloze session. The sentence is composed from the rule's `pergunta`
+ * (question) and `respostaCerta` (answer) so that even a single-word answer has
+ * surrounding context (issue #68). The gap is the answer itself, masked as a
+ * blank at the end of the composed sentence. `lastIndexOf` is used so the
+ * appended answer is the one masked, even if the question happens to contain it.
+ * Deterministic: the same rule always produces the same sentence and gap.
  */
 export function buildClozeSession(rules: GameRule[], sessionId: string): ClozeSession {
   const items: ClozeItem[] = rules.map((rule) => {
-    const { span, start, end } = longestWordSpan(rule.respostaCerta);
-    const sentence = rule.respostaCerta.slice(0, start) + BLANK + rule.respostaCerta.slice(end);
+    const answer = rule.respostaCerta;
+    // Compose the sentence from the question and the answer. The question is the
+    // context; the answer is appended and then masked as the blank.
+    const composed = `${rule.pergunta} ${answer}`.trim();
+    const answerIndex = composed.lastIndexOf(answer);
+    const sentence =
+      answerIndex >= 0
+        ? composed.slice(0, answerIndex) + BLANK + composed.slice(answerIndex + answer.length)
+        : BLANK;
     return {
       regraId: rule.id,
       sentence,
-      gap: span,
-      answer: rule.respostaCerta,
+      gap: answer,
+      answer,
     };
   });
   return { id: sessionId, type: 'cloze', items };

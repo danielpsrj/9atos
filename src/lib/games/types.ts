@@ -98,9 +98,10 @@ export interface MatchSession {
 /** One cloze item: a sentence with a masked gap and the exact answer. */
 export interface ClozeItem {
   regraId: string;
-  /** The sentence with the gap rendered as a blank (e.g. "___"). */
+  /** The sentence with the gap rendered as a blank (e.g. "___"). Composed from
+      the rule's question and answer so there is always surrounding context. */
   sentence: string;
-  /** The masked span — the longest contiguous word span of the answer. */
+  /** The masked span — the answer, blanked out within the sentence. */
   gap: string;
   /** The exact answer string for validation (case/whitespace-insensitive). */
   answer: string;
