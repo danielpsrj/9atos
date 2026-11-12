@@ -44,4 +44,25 @@ describe('topicoRepository', () => {
     await topicoRepository.delete(created.id);
     expect(await topicoRepository.getById(created.id)).toBeNull();
   });
+
+  it('deleteCascade removes the topico, its regras, and their progress (#63)', async () => {
+    const topico = await topicoRepository.create({ nome: 'CascadeTop', disciplinaId });
+    const regra = await prisma.regra.create({
+      data: { topicoId: topico.id, pergunta: 'Q?', respostaCerta: 'A', distratores: [] },
+    });
+    const usuario = await prisma.usuario.create({ data: { nome: 'CascadeUser' } });
+    await prisma.progressoUsuario.create({
+      data: { usuarioId: usuario.id, regraId: regra.id },
+    });
+
+    await topicoRepository.deleteCascade(topico.id);
+
+    expect(await topicoRepository.getById(topico.id)).toBeNull();
+    expect(await prisma.regra.findUnique({ where: { id: regra.id } })).toBeNull();
+    expect(
+      await prisma.progressoUsuario.findUnique({
+        where: { usuarioId_regraId: { usuarioId: usuario.id, regraId: regra.id } },
+      }),
+    ).toBeNull();
+  });
 });

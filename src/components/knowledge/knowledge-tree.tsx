@@ -91,6 +91,26 @@ interface DeleteState {
   url: string;
   label: string;
   nome: string;
+  /** The number of descendant nodes that will be deleted along with this node
+   *  (0 for a leaf). Drives the cascade warning in the delete dialog. */
+  childCount: number;
+}
+
+/** Count every descendant of a node (issue #63): for an area, its disciplinas
+ *  plus their topicos plus their regras; for a disciplina, its topicos plus
+ *  their regras; for a topico, its regras. */
+function countDescendants(node: {
+  disciplinas?: { topicos: { regras: unknown[] }[] }[];
+  topicos?: { regras: unknown[] }[];
+  regras?: unknown[];
+}): number {
+  if (node.disciplinas !== undefined) {
+    return node.disciplinas.reduce((sum, d) => sum + 1 + countDescendants(d), 0);
+  }
+  if (node.topicos !== undefined) {
+    return node.topicos.reduce((sum, t) => sum + 1 + countDescendants(t), 0);
+  }
+  return node.regras?.length ?? 0;
 }
 
 export function KnowledgeTree() {
@@ -266,6 +286,7 @@ export function KnowledgeTree() {
             url: `/api/regras/${regra.id}`,
             label: t('regraLabel'),
             nome: regra.pergunta,
+            childCount: 0,
           });
         },
       ),
@@ -301,9 +322,10 @@ export function KnowledgeTree() {
         },
         () => {
           setDeleteState({
-            url: `/api/topicos/${topico.id}`,
+            url: `/api/topicos/${topico.id}?cascade=true`,
             label: t('topicoLabel'),
             nome: topico.nome,
+            childCount: countDescendants(topico),
           });
         },
       ),
@@ -348,9 +370,10 @@ export function KnowledgeTree() {
         },
         () => {
           setDeleteState({
-            url: `/api/disciplinas/${disciplina.id}`,
+            url: `/api/disciplinas/${disciplina.id}?cascade=true`,
             label: t('disciplinaLabel'),
             nome: disciplina.nome,
+            childCount: countDescendants(disciplina),
           });
         },
       ),
@@ -393,9 +416,10 @@ export function KnowledgeTree() {
         },
         () => {
           setDeleteState({
-            url: `/api/areas/${area.id}`,
+            url: `/api/areas/${area.id}?cascade=true`,
             label: t('areaLabel'),
             nome: area.nome,
+            childCount: countDescendants(area),
           });
         },
       ),
@@ -486,6 +510,11 @@ export function KnowledgeTree() {
             <p className="truncate rounded-md bg-muted px-3 py-2 text-sm text-text-secondary">
               {deleteState.nome}
             </p>
+            {deleteState.childCount > 0 && (
+              <p role="alert" className="text-sm text-error">
+                {t('deleteCascadeWarning', { count: deleteState.childCount })}
+              </p>
+            )}
             {deleteError !== null && (
               <p role="alert" className="text-sm text-error">
                 {deleteError}

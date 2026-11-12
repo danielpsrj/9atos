@@ -34,6 +34,27 @@ export const disciplinaRepository = {
     return prisma.disciplina.delete({ where: { id } });
   },
 
+  /** Delete a disciplina and its subtree (topicos, regras) plus the study
+   *  progress of those regras, in one transaction (issue #63). */
+  async deleteCascade(id: string): Promise<Disciplina> {
+    const disciplina = await prisma.disciplina.findUniqueOrThrow({ where: { id } });
+    await prisma.$transaction(async (tx) => {
+      const regraIds = (
+        await tx.regra.findMany({
+          where: { topico: { disciplinaId: id } },
+          select: { id: true },
+        })
+      ).map((r) => r.id);
+      if (regraIds.length > 0) {
+        await tx.progressoUsuario.deleteMany({ where: { regraId: { in: regraIds } } });
+      }
+      await tx.regra.deleteMany({ where: { topico: { disciplinaId: id } } });
+      await tx.topico.deleteMany({ where: { disciplinaId: id } });
+      await tx.disciplina.delete({ where: { id } });
+    });
+    return disciplina;
+  },
+
   async withTopicos(id: string): Promise<DisciplinaWithTopicos | null> {
     return prisma.disciplina.findUnique({ where: { id }, include: { topicos: true } });
   },

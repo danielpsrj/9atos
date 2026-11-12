@@ -161,6 +161,7 @@
     "deleteCancel": "Cancelar",
     "deleteError": "Não foi possível excluir. {message}",
     "deleteConflict": "Não é possível excluir: ainda possui filhos.",
+    "deleteCascadeWarning": "Isso também excluirá {count} item(ns) filho(s).",
     "dialogCreateArea": "Nova área",
     "dialogEditArea": "Editar área",
     "dialogCreateDisciplina": "Nova disciplina",

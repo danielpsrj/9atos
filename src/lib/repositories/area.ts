@@ -35,6 +35,30 @@ export const areaRepository = {
     return prisma.area.delete({ where: { id } });
   },
 
+  /** Delete an area and its entire subtree (disciplinas, topicos, regras) plus
+   *  the study progress of those regras, in one transaction (issue #63). The
+   *  non-cascade `delete` keeps the schema's RESTRICT behavior (409 while
+   *  disciplinas exist); this is the explicit "delete with children" path. */
+  async deleteCascade(id: string): Promise<Area> {
+    const area = await prisma.area.findUniqueOrThrow({ where: { id } });
+    await prisma.$transaction(async (tx) => {
+      const regraIds = (
+        await tx.regra.findMany({
+          where: { topico: { disciplina: { areaId: id } } },
+          select: { id: true },
+        })
+      ).map((r) => r.id);
+      if (regraIds.length > 0) {
+        await tx.progressoUsuario.deleteMany({ where: { regraId: { in: regraIds } } });
+      }
+      await tx.regra.deleteMany({ where: { topico: { disciplina: { areaId: id } } } });
+      await tx.topico.deleteMany({ where: { disciplina: { areaId: id } } });
+      await tx.disciplina.deleteMany({ where: { areaId: id } });
+      await tx.area.delete({ where: { id } });
+    });
+    return area;
+  },
+
   async withDisciplinas(id: string): Promise<AreaWithDisciplinas | null> {
     return prisma.area.findUnique({ where: { id }, include: { disciplinas: true } });
   },

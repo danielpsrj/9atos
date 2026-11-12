@@ -63,15 +63,19 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 }
 
 // ── DELETE /api/areas/:id ────────────────────────────────────────────────────
-// Deletes an area. The schema restricts deletion while disciplinas exist.
-// Params: id. Body: none.
+// Deletes an area. By default the schema restricts deletion while disciplinas
+// exist (409 CONFLICT). With ?cascade=true the area and its entire subtree
+// (disciplinas, topicos, regras) plus the study progress of those regras are
+// deleted in one transaction (issue #63 — "delete a parent including children").
+// Params: id. Query: cascade (optional, "true"). Body: none.
 // Response 200: the deleted Area. 404 NOT_FOUND if missing; 409 CONFLICT if it
-// still has disciplinas (schema FK restriction — not reimplemented here).
+// still has disciplinas and cascade was not requested.
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
   const { id } = await params;
+  const cascade = req.nextUrl.searchParams.get('cascade') === 'true';
   try {
-    const area = await areaRepository.delete(id);
+    const area = cascade ? await areaRepository.deleteCascade(id) : await areaRepository.delete(id);
     return NextResponse.json(area);
   } catch (err) {
     if (isPrismaNotFound(err)) {

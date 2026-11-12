@@ -103,15 +103,20 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 }
 
 // ── DELETE /api/disciplinas/:id ──────────────────────────────────────────────
-// Deletes a disciplina. The schema restricts deletion while topicos exist.
-// Params: id. Body: none.
-// Response 200: the deleted Disciplina. 404 NOT_FOUND if missing; 409 CONFLICT
-// if it still has topicos.
+// Deletes a disciplina. By default the schema restricts deletion while topicos
+// exist (409 CONFLICT). With ?cascade=true the disciplina and its subtree
+// (topicos, regras) plus the study progress of those regras are deleted in one
+// transaction (issue #63). Params: id. Query: cascade (optional, "true").
+// Body: none. Response 200: the deleted Disciplina. 404 NOT_FOUND if missing;
+// 409 CONFLICT if it still has topicos and cascade was not requested.
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
   const { id } = await params;
+  const cascade = req.nextUrl.searchParams.get('cascade') === 'true';
   try {
-    const disciplina = await disciplinaRepository.delete(id);
+    const disciplina = cascade
+      ? await disciplinaRepository.deleteCascade(id)
+      : await disciplinaRepository.delete(id);
     return NextResponse.json(disciplina);
   } catch (err) {
     if (isPrismaNotFound(err)) {

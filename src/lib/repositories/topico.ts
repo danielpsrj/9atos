@@ -50,4 +50,21 @@ export const topicoRepository = {
   async delete(id: string): Promise<Topico> {
     return prisma.topico.delete({ where: { id } });
   },
+
+  /** Delete a topico and its regras plus the study progress of those regras, in
+   *  one transaction (issue #63). */
+  async deleteCascade(id: string): Promise<Topico> {
+    const topico = await prisma.topico.findUniqueOrThrow({ where: { id } });
+    await prisma.$transaction(async (tx) => {
+      const regraIds = (
+        await tx.regra.findMany({ where: { topicoId: id }, select: { id: true } })
+      ).map((r) => r.id);
+      if (regraIds.length > 0) {
+        await tx.progressoUsuario.deleteMany({ where: { regraId: { in: regraIds } } });
+      }
+      await tx.regra.deleteMany({ where: { topicoId: id } });
+      await tx.topico.delete({ where: { id } });
+    });
+    return topico;
+  },
 };

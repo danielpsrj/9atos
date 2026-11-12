@@ -83,15 +83,20 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 }
 
 // ── DELETE /api/topicos/:id ──────────────────────────────────────────────────
-// Deletes a topico. The schema restricts deletion while regras exist.
-// Params: id. Body: none.
+// Deletes a topico. By default the schema restricts deletion while regras exist
+// (409 CONFLICT). With ?cascade=true the topico and its regras plus the study
+// progress of those regras are deleted in one transaction (issue #63).
+// Params: id. Query: cascade (optional, "true"). Body: none.
 // Response 200: the deleted Topico. 404 NOT_FOUND if missing; 409 CONFLICT if it
-// still has regras.
+// still has regras and cascade was not requested.
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
   const { id } = await params;
+  const cascade = req.nextUrl.searchParams.get('cascade') === 'true';
   try {
-    const topico = await topicoRepository.delete(id);
+    const topico = cascade
+      ? await topicoRepository.deleteCascade(id)
+      : await topicoRepository.delete(id);
     return NextResponse.json(topico);
   } catch (err) {
     if (isPrismaNotFound(err)) {

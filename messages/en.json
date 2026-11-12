@@ -161,6 +161,7 @@
     "deleteCancel": "Cancel",
     "deleteError": "Could not delete. {message}",
     "deleteConflict": "Cannot delete: it still has children.",
+    "deleteCascadeWarning": "This will also delete {count} child item(s).",
     "dialogCreateArea": "New area",
     "dialogEditArea": "Edit area",
     "dialogCreateDisciplina": "New discipline",
