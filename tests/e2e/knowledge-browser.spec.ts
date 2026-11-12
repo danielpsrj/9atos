@@ -218,21 +218,26 @@ test.describe('knowledge tree browser (#46)', () => {
     expect(areas.some((a) => a.nome === AREA_NAME)).toBe(false);
   });
 
-  test('deleting a parent with children is blocked (409 conflict)', async ({ page }) => {
-    await page.goto('/pt-BR/knowledge');
-    await page.waitForLoadState('networkidle');
+  // KN-04 (issue #72): the non-cascade 409 is reachable via the API only — the
+  // UI's delete flow always sends ?cascade=true (see the cascade-warning test
+  // below), so no UI path can trigger the conflict. Verify the API guard
+  // directly: a non-cascade delete of a parent that still has children is
+  // blocked with a 409 CONFLICT, and the parent survives.
+  test('non-cascade delete of a parent is blocked with a 409 (API-only)', async ({ request }) => {
+    const areasRes = await request.get('/api/areas');
+    const areas = (await areasRes.json()) as { id: string; nome: string }[];
+    const seededArea = areas.find((a) => a.nome === 'Direito Constitucional');
+    expect(seededArea, 'seeded area should exist').toBeDefined();
+    if (seededArea === undefined) return;
 
-    // Expand the seeded area (it has disciplinas).
-    await expandNode(page, 'Direito Constitucional');
+    // A non-cascade delete of a parent with children is blocked with a 409.
+    const res = await request.delete(`/api/areas/${seededArea.id}`);
+    expect(res.status()).toBe(409);
+    const body = (await res.json()) as { error: { code: string; message: string } };
+    expect(body.error.code).toBe('CONFLICT');
 
-    // Try to delete it: the confirmation dialog appears, and the delete is
-    // rejected with the conflict message (the area still has disciplinas).
-    await nodeRow(page, 'Direito Constitucional').getByRole('button', { name: 'Excluir' }).click();
-    await page.getByRole('button', { name: 'Excluir', exact: true }).last().click();
-    await expect(page.getByText('Não é possível excluir: ainda possui filhos.')).toBeVisible();
-
-    // Cancel the dialog; the area is still there.
-    await page.getByRole('button', { name: 'Cancelar' }).click();
-    await expect(nodeRow(page, 'Direito Constitucional')).toBeVisible();
+    // The area is still there (the delete was blocked, not cascaded).
+    const areasAfter = (await (await request.get('/api/areas')).json()) as { nome: string }[];
+    expect(areasAfter.some((a) => a.nome === 'Direito Constitucional')).toBe(true);
   });
 });
