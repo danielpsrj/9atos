@@ -139,14 +139,29 @@ export interface LineError {
   message: string;
 }
 
+/** A structured warning from the parser. The parser is a server-side,
+ *  locale-agnostic module, so it returns a code + data rather than a finished
+ *  sentence; the client translates it via the message catalogs (issue #70). */
+export interface TopicShortageWarning {
+  code: 'TOPIC_SHORTAGE';
+  /** The number of rules that were parsed. */
+  ruleCount: number;
+  /** The minimum rules per topic (AD-14). */
+  minRules: number;
+}
+
+/** The union of parser warning shapes (extensible as new warnings are added). */
+export type ParseWarning = TopicShortageWarning;
+
 /** The result of parsing a knowledge-base file. */
 export interface ParseResult {
   /** The valid regras, in file order. */
   regras: ParsedRegra[];
   /** Line-level errors for rejected rows (not a crash, not a silent skip). */
   errors: LineError[];
-  /** Warnings (e.g. a topic that would end up with < 4 rules). */
-  warnings: string[];
+  /** Warnings (e.g. a topic that would end up with < 4 rules). Structured, so
+   *  the client can translate them (issue #70). */
+  warnings: ParseWarning[];
   /** The total number of data rows in the file (valid + rejected; the CSV
    *  header is not counted). Used to enforce the import row limit. */
   rowCount: number;
@@ -511,12 +526,12 @@ export function parseJson(text: string): ParseResult {
 // ── Shared ───────────────────────────────────────────────────────────────────
 
 /** Warn when the import would leave a target topic with < 4 rules (the
- *  distractor-shortage risk, plan §7 / AD-14). */
-function topicShortageWarnings(ruleCount: number): string[] {
+ *  distractor-shortage risk, plan §7 / AD-14). Returns a structured warning
+ *  (code + data) so the client can translate it — the parser stays locale-free
+ *  (issue #70). */
+function topicShortageWarnings(ruleCount: number): ParseWarning[] {
   if (ruleCount < MIN_RULES_PER_TOPIC) {
-    return [
-      `Only ${String(ruleCount)} rule(s) parsed; a topic with fewer than ${String(MIN_RULES_PER_TOPIC)} rules risks a distractor shortage in the multiple-choice game.`,
-    ];
+    return [{ code: 'TOPIC_SHORTAGE', ruleCount, minRules: MIN_RULES_PER_TOPIC }];
   }
   return [];
 }

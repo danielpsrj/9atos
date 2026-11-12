@@ -234,7 +234,10 @@
     "mappingField_dica": "Hint (dica)",
     "mappingField_distratores": "Distractors (distratores)",
     "mappingField_nivel_dificuldade": "Difficulty (nivel_dificuldade)",
-    "mappingField_probabilidade": "Probability (probabilidade)"
+    "mappingField_probabilidade": "Probability (probabilidade)",
+    "warnings": {
+      "topicShortage": "Only {count} rule(s) parsed; a topic with fewer than {min} rules risks a distractor shortage in the multiple-choice game."
+    }
   },
   "Settings": {
     "title": "Settings",

@@ -8,6 +8,7 @@ import {
   type ParsedRegra,
   type LineError,
   type ColumnMapping,
+  type ParseWarning,
   CSV_HEADER,
 } from '@/lib/ingestion/parser';
 
@@ -21,7 +22,7 @@ import {
 interface PreviewResult {
   regras: ParsedRegra[];
   errors: LineError[];
-  warnings: string[];
+  warnings: ParseWarning[];
   rowCount: number;
 }
 
@@ -44,7 +45,7 @@ function isNeedsMapping(data: PreviewResult | NeedsMappingResult): data is Needs
 interface ImportResult {
   inserted: number;
   errors: LineError[];
-  warnings: string[];
+  warnings: ParseWarning[];
   rowCount: number;
 }
 
@@ -62,6 +63,14 @@ const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
 export function ImportScreen() {
   const t = useTranslations('Import');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Translate a structured parser warning into the active locale (issue #70).
+  // The parser is locale-agnostic and returns a code + data; all user-facing
+  // text lives in the message catalogs. (ParseWarning is a single-member union
+  // today; add a branch here when a new warning type is introduced.)
+  function warningText(warning: ParseWarning): string {
+    return t('warnings.topicShortage', { count: warning.ruleCount, min: warning.minRules });
+  }
 
   const [fileName, setFileName] = useState<string | null>(null);
   const [content, setContent] = useState<string | null>(null);
@@ -338,14 +347,15 @@ export function ImportScreen() {
         <section className="flex flex-col gap-4 rounded-xl bg-bg-secondary p-5 ring-1 ring-foreground/10">
           <h2 className="text-base font-semibold text-text-primary">{t('previewTitle')}</h2>
 
-          {/* Warnings (e.g. the distractor-shortage warning). */}
-          {preview.warnings.map((warning) => (
+          {/* Warnings (e.g. the distractor-shortage warning), translated via
+              the catalogs (issue #70). */}
+          {preview.warnings.map((warning, index) => (
             <p
-              key={warning}
+              key={`${warning.code}-${String(index)}`}
               className="flex items-start gap-2 rounded-lg bg-accent/10 p-3 text-sm text-accent"
             >
               <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0" />
-              {warning}
+              {warningText(warning)}
             </p>
           ))}
 
@@ -421,13 +431,13 @@ export function ImportScreen() {
             <CheckCircle2 aria-hidden className="size-5" />
             {t('importComplete', { count: importResult.inserted })}
           </h2>
-          {importResult.warnings.map((warning) => (
+          {importResult.warnings.map((warning, index) => (
             <p
-              key={warning}
+              key={`${warning.code}-${String(index)}`}
               className="flex items-start gap-2 rounded-lg bg-accent/10 p-3 text-sm text-accent"
             >
               <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0" />
-              {warning}
+              {warningText(warning)}
             </p>
           ))}
           {importResult.errors.length > 0 && (

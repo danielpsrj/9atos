@@ -234,7 +234,10 @@
     "mappingField_dica": "Dica (dica)",
     "mappingField_distratores": "Distratores (distratores)",
     "mappingField_nivel_dificuldade": "Dificuldade (nivel_dificuldade)",
-    "mappingField_probabilidade": "Probabilidade (probabilidade)"
+    "mappingField_probabilidade": "Probabilidade (probabilidade)",
+    "warnings": {
+      "topicShortage": "Apenas {count} regra(s) analisada(s); um tópico com menos de {min} regras corre o risco de ficar sem distratores no jogo de múltipla escolha."
+    }
   },
   "Settings": {
     "title": "Configurações",

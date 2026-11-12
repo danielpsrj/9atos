@@ -113,9 +113,14 @@ describe('parseCsv (malformed fixture)', () => {
     expect(messages[3]).toContain('probabilidade');
   });
 
-  it('warns about the distractor shortage (only 2 valid rules < 4)', () => {
+  it('warns about the distractor shortage as a structured warning (issue #70)', () => {
     expect(result.warnings).toHaveLength(1);
-    expect(head(result.warnings)).toContain(String(MIN_RULES_PER_TOPIC));
+    // The parser is locale-agnostic: it returns a code + data, not a sentence.
+    expect(head(result.warnings)).toEqual({
+      code: 'TOPIC_SHORTAGE',
+      ruleCount: 2,
+      minRules: MIN_RULES_PER_TOPIC,
+    });
   });
 });
 
