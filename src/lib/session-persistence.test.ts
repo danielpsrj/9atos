@@ -12,7 +12,7 @@ import {
 class MemoryStorage {
   private store = new Map<string, string>();
   getItem(key: string): string | null {
-    return this.store.has(key) ? (this.store.get(key) as string) : null;
+    return this.store.get(key) ?? null;
   }
   setItem(key: string, value: string): void {
     this.store.set(key, value);
@@ -113,6 +113,8 @@ describe('session persistence (issues #57, #60)', () => {
       },
     };
     (globalThis as { window: unknown }).window = { localStorage: throwing };
-    expect(() => clearSessionState('cad-1', 'flashcards')).not.toThrow();
+    expect(() => {
+      clearSessionState('cad-1', 'flashcards');
+    }).not.toThrow();
   });
 });
