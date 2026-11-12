@@ -308,9 +308,11 @@ export function StudySession() {
     };
   }, [zenMode, phase, session, currentIndex, cardSeconds, handleGrade]);
 
-  // Fire the single sync when the session reaches the results phase.
+  // Fire the single sync when the session reaches the results phase. An empty
+  // session (no rules to review) has nothing to record, so it skips the sync
+  // entirely — firing one with an empty `resultados` array would 400 (issue #67).
   useEffect(() => {
-    if (phase !== 'results' || syncedRef.current || session === null) return;
+    if (phase !== 'results' || syncedRef.current || session === null || grades.length === 0) return;
     syncedRef.current = true;
     const sessionId = session.id;
     let cancelled = false;
