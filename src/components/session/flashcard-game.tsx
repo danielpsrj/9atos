@@ -27,12 +27,18 @@ export function FlashcardGame({ card, onGrade }: FlashcardGameProps) {
       {/* The flippable card. The 3D flip uses a rotateY transition on the
           --duration-slow (300 ms) token; the global prefers-reduced-motion rule
           collapses it to ~0 ms so reduced-motion users see the back instantly. */}
+      {/* Card size (issue #58): about 50% of the screen in both dimensions,
+          not counting the left nav column (w-64 = 256px, so half of the
+          remaining width is calc(50vw - 128px)) and 50% of the viewport height.
+          The min-w/min-h guarantee the card is always large enough to hold 300
+          characters at the standard font size, and the p-[12%] padding keeps at
+          least 10% of the card empty (no text) on every side. */}
       <button
         type="button"
         onClick={() => {
           setFlipped(true);
         }}
-        className="relative h-72 w-full max-w-xl [perspective:1200px]"
+        className="relative h-[50vh] min-h-[22rem] w-full max-w-[calc(50vw-128px)] min-w-[26rem] [perspective:1200px]"
         aria-label={flipped ? undefined : t('flipHint')}
         disabled={flipped}
       >
@@ -40,12 +46,15 @@ export function FlashcardGame({ card, onGrade }: FlashcardGameProps) {
           className="relative h-full w-full transition-transform duration-300 [transform-style:preserve-3d]"
           style={{ transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
         >
-          {/* Front: the question. */}
-          <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-bg-secondary p-6 ring-1 ring-foreground/10 [backface-visibility:hidden]">
+          {/* Front: the question. The p-[12%] padding keeps at least 10% of the
+              card empty (no text) on every side (issue #58). */}
+          <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-bg-secondary p-[12%] ring-1 ring-foreground/10 [backface-visibility:hidden]">
             <p className="text-center text-lg font-medium text-text-primary">{card.front}</p>
           </div>
-          {/* Back: the answer + justification + hint (when present). */}
-          <div className="absolute inset-0 flex flex-col gap-4 overflow-auto rounded-xl bg-bg-secondary p-6 ring-1 ring-primary/40 [backface-visibility:hidden] [transform:rotateY(180deg)]">
+          {/* Back: the answer + justification + hint (when present). The p-[12%]
+              padding keeps at least 10% of the card empty on every side (issue
+              #58). */}
+          <div className="absolute inset-0 flex flex-col gap-4 overflow-auto rounded-xl bg-bg-secondary p-[12%] ring-1 ring-primary/40 [backface-visibility:hidden] [transform:rotateY(180deg)]">
             <p className="text-base font-medium text-primary">{card.back}</p>
             {card.justificativa !== undefined && (
               <div className="flex flex-col gap-1">

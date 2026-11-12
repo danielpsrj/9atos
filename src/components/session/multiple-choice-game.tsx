@@ -28,9 +28,14 @@ export function MultipleChoiceGame({ item, onAnswer, onNext }: MultipleChoiceGam
   const answered = selected !== null;
   const isCorrect = selected !== null && selected === item.correctIndex;
 
+  // The option row styling (issue #56). Each option is a full-width row: a
+  // letter badge (A/B/C/D) on the left, the option text wrapping to the right.
+  // The base is a flex row (items-start so the badge tops-align with the first
+  // line of a multi-line option); the feedback states tint the border,
+  // background, and text.
   function optionClass(index: number): string {
     const base =
-      'w-full rounded-lg border px-4 py-3 text-left text-sm transition-colors duration-150';
+      'flex w-full items-start gap-3 rounded-lg border px-4 py-3 text-left transition-colors duration-150';
     if (!answered) {
       return `${base} border-border bg-bg-secondary text-text-primary hover:border-primary/40`;
     }
@@ -51,10 +56,9 @@ export function MultipleChoiceGame({ item, onAnswer, onNext }: MultipleChoiceGam
       <p className="text-center text-base font-medium text-text-primary">{item.question}</p>
       <div className="flex flex-col gap-2">
         {item.options.map((option, index) => (
-          <Button
+          <button
             key={index}
             type="button"
-            variant="outline"
             disabled={answered}
             onClick={() => {
               setSelected(index);
@@ -62,8 +66,16 @@ export function MultipleChoiceGame({ item, onAnswer, onNext }: MultipleChoiceGam
             }}
             className={optionClass(index)}
           >
-            {option}
-          </Button>
+            {/* Letter badge (A/B/C/D) on the left; the option text wraps to the
+                right of it (issue #56). */}
+            <span
+              aria-hidden
+              className="flex size-7 shrink-0 items-center justify-center rounded-md bg-bg-primary text-xs font-semibold text-text-secondary ring-1 ring-border"
+            >
+              {String.fromCharCode(65 + index)}
+            </span>
+            <span className="min-w-0 text-sm">{option}</span>
+          </button>
         ))}
       </div>
       {/* The justification is revealed after a wrong selection. */}
