@@ -216,6 +216,32 @@ h6 {
   }
 }
 
+/* Scrollbars (issue #59): the track is fully transparent so only the drag
+   handle is visible, and the handle uses the muted-slate token so it reads as
+   part of the dark UI instead of a white browser default. The thin 8px width
+   keeps the handle inside the rounded border of the scroll container (the
+   flashcard back face), so the border's right-side rounding is preserved.
+   `scrollbar-width: thin` + `scrollbar-color` cover Firefox; the webkit rules
+   cover Chromium/Safari. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-secondary) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--text-secondary);
+  border-radius: 9999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-primary);
+}
+
 /* The app is a single dark theme; .dark is intentionally identical to :root so
    no light-theme default can leak through. */
 .dark {

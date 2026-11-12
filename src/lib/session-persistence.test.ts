@@ -74,7 +74,7 @@ describe('session persistence (issues #57, #60)', () => {
   });
 
   it('load returns null for malformed JSON', () => {
-    (window.localStorage as MemoryStorage).setItem(
+    (window.localStorage as unknown as MemoryStorage).setItem(
       '9atos:session:cad-1:flashcards',
       '{not valid json',
     );
@@ -82,7 +82,10 @@ describe('session persistence (issues #57, #60)', () => {
   });
 
   it('load returns null when the stored value is not an object', () => {
-    (window.localStorage as MemoryStorage).setItem('9atos:session:cad-1:flashcards', '"a string"');
+    (window.localStorage as unknown as MemoryStorage).setItem(
+      '9atos:session:cad-1:flashcards',
+      '"a string"',
+    );
     expect(loadSessionState('cad-1', 'flashcards')).toBeNull();
   });
 

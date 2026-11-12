@@ -43,6 +43,11 @@ export function StudySession() {
   const [startError, setStartError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [grades, setGrades] = useState<SessionResult[]>([]);
+  // The set of regraIds that have been graded (issue #59). Drives the
+  // done/remaining count: a card counts as "done" once it has been graded,
+  // regardless of the current browse position (the prev/next arrows let the
+  // user move between cards without solving them).
+  const [gradedIds, setGradedIds] = useState<ReadonlySet<string>>(new Set());
   const [zenMode, setZenMode] = useState(true);
   const [timerSeconds, setTimerSeconds] = useState(0);
   // The configured per-card seconds (from settings, AD-12); defaults to 30.
@@ -101,6 +106,9 @@ export function StudySession() {
         setUsuarioId(persisted.session.usuarioId);
         setCurrentIndex(persisted.currentIndex);
         setGrades(persisted.grades);
+        // Rebuild the graded-card set from the persisted grades (issue #59):
+        // the done/remaining count and the completion check depend on it.
+        setGradedIds(new Set(persisted.grades.map((g) => g.regraId)));
         setMatchedIds(new Set(persisted.matchedIds));
         setMissedIds(new Set(persisted.missedIds));
         setZenMode(persisted.zenMode);
@@ -159,40 +167,67 @@ export function StudySession() {
         ? session.pairs.length
         : session.items.length;
 
-  // The number of completed items (for the progress bar). Matching counts
-  // matched pairs; the other games count the current index.
-  const completed = session?.type === 'matching' ? matchedIds.size : currentIndex;
+  // The number of completed items (for the progress bar + done/remaining count,
+  // issue #59). Matching counts matched pairs; the other games count the cards
+  // that have been graded (not the browse position — the prev/next arrows let
+  // the user move between cards without solving them).
+  const completed = session?.type === 'matching' ? matchedIds.size : gradedIds.size;
 
   // Record a grade without advancing. Used by the MC game's feedback phase (the
   // grade is recorded when the user answers; the advance happens when the user
-  // clicks "next").
-  const recordGrade = useCallback((regraId: string, qualidade: number) => {
-    setGrades((prev) => [...prev, { regraId, qualidade }]);
-  }, []);
+  // clicks "next"). Also marks the card as graded (issue #59) so the
+  // done/remaining count and the completion check reflect it. A card is graded
+  // at most once (first grade wins): browsing back to an already-graded card
+  // with the prev/next arrows and re-answering it does not create a duplicate
+  // entry in the sync payload.
+  const recordGrade = useCallback(
+    (regraId: string, qualidade: number) => {
+      if (gradedIds.has(regraId)) return; // Already graded: first grade wins.
+      setGrades((prev) => [...prev, { regraId, qualidade }]);
+      setGradedIds((prev) => new Set(prev).add(regraId));
+    },
+    [gradedIds],
+  );
 
-  // Advance to the next item (or finish the session). Used by the MC game's
-  // "next" button after the feedback phase.
+  // Advance to the next item (clamped to the last card). Used by the MC game's
+  // "next" button after the feedback phase. Completion is driven by the graded
+  // count (the effect below), not by the index, so browsing with the prev/next
+  // arrows never ends the session early (issue #59).
   const advance = useCallback(() => {
-    if (currentIndex + 1 >= total) {
-      setPhase('results');
-    } else {
-      setCurrentIndex((i) => i + 1);
-    }
-  }, [currentIndex, total]);
+    setCurrentIndex((i) => Math.min(i + 1, Math.max(0, total - 1)));
+  }, [total]);
 
-  // Record a grade and advance to the next item (or finish the session). Used
-  // by the one-item-at-a-time games (flashcard, cloze) and the timer expiry.
+  // Record a grade and advance to the next item. Used by the one-item-at-a-time
+  // games (flashcard, cloze) and the timer expiry.
   const handleGrade = useCallback(
     (regraId: string, qualidade: number) => {
       recordGrade(regraId, qualidade);
-      if (currentIndex + 1 >= total) {
-        setPhase('results');
-      } else {
-        setCurrentIndex((i) => i + 1);
-      }
+      setCurrentIndex((i) => Math.min(i + 1, Math.max(0, total - 1)));
     },
-    [recordGrade, currentIndex, total],
+    [recordGrade, total],
   );
+
+  // Browse to the previous/next card WITHOUT solving it (issue #59). The
+  // prev/next arrows in the session chrome call these; they only move the
+  // browse position, so no grade is recorded and the done count is unchanged.
+  const handlePrev = useCallback(() => {
+    setCurrentIndex((i) => Math.max(0, i - 1));
+  }, []);
+  const handleNext = useCallback(() => {
+    setCurrentIndex((i) => Math.min(Math.max(0, total - 1), i + 1));
+  }, [total]);
+
+  // Finish the session once every card has been graded (issue #59). Completion
+  // is driven by the graded count, not the browse position, so the user can
+  // freely move between cards with the prev/next arrows and the session ends
+  // only when all cards are solved. Matching is handled by its own effect
+  // (all pairs matched), so it is excluded here.
+  useEffect(() => {
+    if (phase !== 'playing' || session === null) return;
+    if (session.type === 'matching') return;
+    if (gradedIds.size < total) return;
+    setPhase('results');
+  }, [phase, session, gradedIds, total]);
 
   // Matching game: handle a concept/definition selection. When both sides are
   // selected, check the pair: correct → beam + match; wrong → error flash +
@@ -343,12 +378,19 @@ export function StudySession() {
         total={total}
         zenMode={zenMode}
         timerSeconds={timerSeconds}
+        // The prev/next browse arrows apply to the one-item-at-a-time games
+        // (issue #59); matching has no single "current card" to browse, so the
+        // arrows are disabled there.
+        canPrev={session.type !== 'matching' && currentIndex > 0}
+        canNext={session.type !== 'matching' && currentIndex < total - 1}
         onToggleMode={() => {
           setZenMode((z) => !z);
         }}
         onExit={() => {
           router.push('/');
         }}
+        onPrev={handlePrev}
+        onNext={handleNext}
       />
       <main className="flex flex-1 flex-col items-center justify-center gap-6 p-6">
         {session.type === 'flashcard' &&

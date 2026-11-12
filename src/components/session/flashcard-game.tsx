@@ -67,40 +67,47 @@ export function FlashcardGame({ card, onGrade }: FlashcardGameProps) {
         </div>
       </button>
 
-      {/* Grade buttons appear only after the reveal. */}
+      {/* Grade buttons appear only after the reveal. The Missed button is set
+          apart (issue #59): it means the card was NOT recalled, so it sits on
+          its own row with an error-tinted style, while the three success
+          buttons (Hard/Good/Easy — recalled, with a difficulty rating) are
+          grouped together below it. */}
       {flipped ? (
-        <div className="grid w-full max-w-xl grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="flex w-full max-w-xl flex-col items-center gap-4">
           <Button
             variant="outline"
+            className="border-error/40 text-error hover:bg-error/10 hover:text-error"
             onClick={() => {
               onGrade(Grade.Missed);
             }}
           >
             {t('gradeMissed')}
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              onGrade(Grade.Hard);
-            }}
-          >
-            {t('gradeHard')}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              onGrade(Grade.Good);
-            }}
-          >
-            {t('gradeGood')}
-          </Button>
-          <Button
-            onClick={() => {
-              onGrade(Grade.Easy);
-            }}
-          >
-            {t('gradeEasy')}
-          </Button>
+          <div className="grid w-full grid-cols-3 gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                onGrade(Grade.Hard);
+              }}
+            >
+              {t('gradeHard')}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                onGrade(Grade.Good);
+              }}
+            >
+              {t('gradeGood')}
+            </Button>
+            <Button
+              onClick={() => {
+                onGrade(Grade.Easy);
+              }}
+            >
+              {t('gradeEasy')}
+            </Button>
+          </div>
         </div>
       ) : (
         <p className="text-sm text-text-secondary">{t('flipHint')}</p>
