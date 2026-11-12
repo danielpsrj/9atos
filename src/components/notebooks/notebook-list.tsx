@@ -66,9 +66,14 @@ export function NotebookList() {
             >
               <NotebookPen aria-hidden className="size-4 shrink-0 text-text-secondary" />
               <span className="min-w-0 flex-1 truncate text-sm text-text-primary">{item.nome}</span>
-              <span className="flex shrink-0 items-center gap-1 text-xs text-text-secondary">
-                <BookOpen aria-hidden className="size-3.5" />
-                {item.conhecimento?.nome ?? t('noKnowledge')}
+              {/* The knowledge-unity name is the flexible, truncating element
+                  (issue #69): it shrinks with an ellipsis so the rule count and
+                  stats icon always fit within 390px. The icon stays fixed. */}
+              <span className="flex min-w-0 items-center gap-1 text-xs text-text-secondary">
+                <BookOpen aria-hidden className="size-3.5 shrink-0" />
+                <span className="min-w-0 truncate">
+                  {item.conhecimento?.nome ?? t('noKnowledge')}
+                </span>
               </span>
               <span className="shrink-0 text-xs text-text-secondary">
                 {t('ruleCount', { count: item._count.regras })}
