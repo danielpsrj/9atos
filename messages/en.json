@@ -254,7 +254,7 @@
     "noDueRules": "No rules due for review right now. Check back later.",
     "exit": "Exit",
     "exitConfirmTitle": "Exit session?",
-    "exitConfirmBody": "Your unsynced progress will be lost.",
+    "exitConfirmBody": "Your progress is saved. You can come back and resume where you left off.",
     "exitConfirm": "Exit",
     "exitCancel": "Keep studying",
     "zenMode": "Zen Mode",

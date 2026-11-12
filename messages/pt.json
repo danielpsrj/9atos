@@ -254,7 +254,7 @@
     "noDueRules": "Nenhuma regra para revisar agora. Volte mais tarde.",
     "exit": "Sair",
     "exitConfirmTitle": "Sair da sessão?",
-    "exitConfirmBody": "Seu progresso não sincronizado será perdido.",
+    "exitConfirmBody": "Seu progresso está salvo. Você pode voltar e continuar de onde parou.",
     "exitConfirm": "Sair",
     "exitCancel": "Continuar estudando",
     "zenMode": "Zen Mode",

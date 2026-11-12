@@ -16,6 +16,7 @@ import {
   type MatchPair,
   type SessionResult,
 } from '@/lib/games';
+import { clearSessionState, loadSessionState, saveSessionState } from '@/lib/session-persistence';
 
 // Study session (issues #37–#43). The client-side session flow: start a session
 // via the API, render the session chrome (progress bar, Exit, Zen/timer toggle)
@@ -84,10 +85,28 @@ export function StudySession() {
     };
   }, []);
 
-  // Start the session on mount.
+  // Start the session on mount — or restore an in-progress one (issues #57,
+  // #60). If a 'playing' session was persisted for this notebook + game, resume
+  // it exactly where the user left off (same sampled items, position, grades,
+  // matching selections, and Zen/timer mode) instead of calling the start API,
+  // which would re-sample a fresh set and discard the collected grades.
   useEffect(() => {
     let cancelled = false;
     async function start() {
+      // Restore a persisted in-progress session, if any.
+      const persisted = loadSessionState(cadernoId, game);
+      if (persisted !== null) {
+        if (cancelled) return;
+        setSession(persisted.session);
+        setUsuarioId(persisted.session.usuarioId);
+        setCurrentIndex(persisted.currentIndex);
+        setGrades(persisted.grades);
+        setMatchedIds(new Set(persisted.matchedIds));
+        setMissedIds(new Set(persisted.missedIds));
+        setZenMode(persisted.zenMode);
+        setPhase('playing');
+        return;
+      }
       try {
         const res = await fetch('/api/study/session/start', {
           method: 'POST',
@@ -113,6 +132,23 @@ export function StudySession() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cadernoId, game]);
+
+  // Persist the in-progress session on every change while playing (issues #57,
+  // #60). The full state (sampled items, position, grades, matching selections,
+  // Zen/timer mode) is written to localStorage so the user can leave and come
+  // back to the exact same game. Cleared once the session completes and syncs.
+  useEffect(() => {
+    if (phase !== 'playing' || session === null) return;
+    saveSessionState(cadernoId, game, {
+      session,
+      currentIndex,
+      grades,
+      phase: 'playing',
+      matchedIds: [...matchedIds],
+      missedIds: [...missedIds],
+      zenMode,
+    });
+  }, [phase, session, cadernoId, game, currentIndex, grades, matchedIds, missedIds, zenMode]);
 
   // The total number of items in the session (for the progress bar). Matching
   // sessions count pairs; the other games count items.
@@ -260,15 +296,21 @@ export function StudySession() {
         if (!res.ok) return;
         const data = (await res.json()) as { regraId: string; proximaRevisao: string }[];
         if (!cancelled) setNextReviews(data);
+        // The session completed and its grades were synced: clear the persisted
+        // in-progress state so a later visit starts a fresh session (issues
+        // #57, #60).
+        clearSessionState(cadernoId, game);
       } catch {
         // Sync failure is non-fatal for the UI; the grades are already shown.
+        // The persisted state is kept so the user can retry the sync by
+        // revisiting the session.
       }
     }
     void sync();
     return () => {
       cancelled = true;
     };
-  }, [phase, session, usuarioId, grades, game]);
+  }, [phase, session, usuarioId, grades, game, cadernoId]);
 
   // Loading (issue #49, NFR-07): a skeleton mirroring the playing-phase layout
   // (chrome + game area) so the swap to the real session causes no layout shift.
