@@ -52,7 +52,7 @@ export interface NotebookStats {
 
 /** Calendar-day key (YYYY-MM-DD) in the exam timezone. */
 function dayKey(instant: Date): string {
-  return format(saoPaulo(instant), 'yyyy-MM-DD');
+  return format(saoPaulo(instant), 'yyyy-MM-dd');
 }
 
 /**
