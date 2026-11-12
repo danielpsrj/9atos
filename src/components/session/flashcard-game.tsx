@@ -23,7 +23,7 @@ export function FlashcardGame({ card, onGrade }: FlashcardGameProps) {
   const [flipped, setFlipped] = useState(false);
 
   return (
-    <div className="flex flex-col items-center gap-6">
+    <div className="flex w-full flex-col items-center gap-6">
       {/* The flippable card. The 3D flip uses a rotateY transition on the
           --duration-slow (300 ms) token; the global prefers-reduced-motion rule
           collapses it to ~0 ms so reduced-motion users see the back instantly. */}
