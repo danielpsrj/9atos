@@ -87,14 +87,16 @@ function PlayBars({
                 fill="var(--error)"
                 rx="2"
               />
-              {/* The play's day label. */}
+              {/* The play's day label, formatted dd/MM (issue #71). play.date is
+                  a yyyy-MM-dd day key, so slice(8,10) is the day and slice(5,7)
+                  the month. */}
               <text
                 x={String(x + barWidth)}
                 y={String(chartHeight + 16)}
                 textAnchor="middle"
                 className="fill-text-secondary text-[10px]"
               >
-                {play.date.slice(5)}
+                {`${play.date.slice(8, 10)}/${play.date.slice(5, 7)}`}
               </text>
             </g>
           );
