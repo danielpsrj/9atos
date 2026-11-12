@@ -39,7 +39,10 @@ export function GameUsageGraph({ games }: GameUsageGraphProps) {
 
   const max = Math.max(1, ...usage.map((u) => u.count));
   const barWidth = 48;
-  const gap = 24;
+  // The gap is wide enough that the longest game label ("Preencher lacunas",
+  // ~100px at text-[10px]) fits under its bar without colliding with its
+  // neighbour (issue #73). Slot = barWidth + gap = 112px.
+  const gap = 64;
   const chartHeight = 140;
   const width = usage.length * (barWidth + gap) + gap;
 
